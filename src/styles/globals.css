@@ -1,0 +1,300 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  background-image: url("/assets/background.png") !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-attachment: fixed !important;
+  background-repeat: no-repeat !important;
+}
+
+body {
+  background: transparent !important;
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+#__next {
+  height: 100%;
+  width: 100%;
+}
+
+/* Admin Layout Sidebar */
+.admin-wrapper {
+  width: 100%;
+  height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+}
+
+.admin-header {
+  height: 70px;
+  padding: 0 20px;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+  z-index: 100;
+  margin: 0;
+}
+
+.admin-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.admin-container {
+  display: flex;
+  flex: 1;
+  gap: 0;
+  overflow: hidden;
+}
+
+.admin-sidebar {
+  width: 200px;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  color: white;
+  padding: 20px;
+  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.2);
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.admin-sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.admin-sidebar li {
+  margin-bottom: 8px;
+}
+
+.admin-sidebar a {
+  display: block;
+  padding: 12px 16px;
+  color: white;
+  font-size: 24px;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  /* font-weight: 500; */
+  font-weight: bold;
+  position: relative;
+  text-align: center;
+}
+
+.admin-sidebar a:hover {
+  background: rgba(255, 255, 255, 0.15);
+  padding-left: 20px;
+}
+
+.admin-sidebar a:active {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.admin-main {
+  flex: 1;
+  height: 100%;
+  padding: 30px;
+
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+.admin-side-nav {
+  --nav-item-height: 56px;
+  --nav-item-gap: 8px;
+}
+
+.admin-side-nav ul {
+  position: relative;
+  padding: 0 !important;
+}
+
+.admin-side-nav ul::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: var(--nav-item-height);
+  border-radius: 0;
+  background: rgba(0, 51, 102, 0.9); /* Tăng độ đậm từ 0.16 lên 0.3 */
+  transform: translateY(
+    calc(var(--active-index) * (var(--nav-item-height) + var(--nav-item-gap)))
+  );
+  transition: transform 280ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  z-index: 0;
+  
+}
+
+.admin-side-nav li {
+  margin-bottom: var(--nav-item-gap);
+  position: relative;
+  z-index: 1;
+}
+
+.admin-side-link {
+  border-radius: 0;
+  min-height: var(--nav-item-height);
+  width: 100%;
+  border-left: none !important;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.admin-side-link:hover {
+  background-color: rgba(0, 51, 102, 0.08);
+}
+
+.admin-side-link.is-active {
+  background-color: transparent;
+  color: #ffffff !important;
+  font-weight: 700;
+  border-left: none !important;
+}
+
+/* Responsive Admin Layout */
+.admin-sidebar-container {
+  width: 200px;
+}
+
+.admin-sidebar-logo .logo-image {
+  width: 120px;
+  height: 120px;
+}
+
+.admin-side-link {
+  font-size: 18px;
+}
+
+.admin-subheader {
+  padding: 20px 30px;
+  gap: 20px;
+}
+
+.admin-title {
+  font-size: 22px;
+}
+
+.admin-user-info {
+  gap: 20px;
+}
+
+.user-name {
+  font-size: 14px;
+}
+
+.logout-button {
+  padding: 8px 16px;
+  font-size: 14px;
+}
+
+.logout-icon {
+  margin-right: 6px;
+}
+
+/* Tablets and laptops */
+@media (max-width: 1200px) {
+  .admin-sidebar-container {
+    width: 200px;
+  }
+  .admin-sidebar-logo .logo-image {
+    width: 100px;
+    height: 100px;
+  }
+  .admin-title {
+    font-size: 18px;
+  }
+}
+
+/* Small tablets */
+@media (max-width: 992px) {
+  .admin-sidebar-container {
+    width: 80px;
+  }
+  .admin-sidebar-logo .logo-image {
+    width: 60px;
+    height: 60px;
+  }
+  .nav-label {
+    display: none;
+  }
+  .admin-side-link {
+    justify-content: center;
+    padding: 0 !important;
+  }
+  .admin-side-link svg {
+    min-width: 24px;
+  }
+  .admin-subheader {
+    padding: 15px 20px;
+  }
+}
+
+/* Mobile phones */
+@media (max-width: 768px) {
+  .admin-sidebar-container {
+    width: 60px;
+  }
+  .admin-sidebar-logo {
+    padding: 5px;
+  }
+  .admin-sidebar-logo .logo-image {
+    width: 40px;
+    height: 40px;
+  }
+  .admin-title {
+    font-size: 14px;
+  }
+  .user-name {
+    display: none;
+  }
+  .logout-text {
+    display: none;
+  }
+  .logout-button {
+    padding: 8px;
+  }
+  .logout-icon {
+    margin-right: 0;
+  }
+  .admin-subheader {
+    padding: 10px 15px;
+  }
+}
