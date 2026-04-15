@@ -107,6 +107,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             display: "flex",
             flex: 1,
             overflow: "hidden",
+            minHeight: 0,
           }}
         >
           {/* Sidebar */}
@@ -200,6 +201,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               display: "flex",
               flexDirection: "column",
               overflow: "hidden",
+              minHeight: 0,
               background: "#f5f5f5",
             }}
           >
@@ -263,7 +265,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <div
               style={{
                 flex: 1,
-                overflow: "visible",
+                overflowY: "auto",
+                overflowX: "hidden",
+                minHeight: 0,
                 padding: 0,
               }}
             >

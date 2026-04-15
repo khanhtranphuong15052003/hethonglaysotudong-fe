@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -56,6 +56,10 @@ const formatDisplayStaffName = (name: string) => {
   )}`;
 };
 
+const TOP_HEADER_HEIGHT = "clamp(88px, 9vh, 118px)";
+const TITLE_HEADER_HEIGHT = "clamp(84px, 9vh, 122px)";
+const TABLE_HEADER_HEIGHT = "clamp(76px, 7vh, 102px)";
+
 export default function CounterDisplayPage() {
   const params = useParams();
   const counterParam = params.counterId as string;
@@ -98,7 +102,7 @@ export default function CounterDisplayPage() {
     );
 
     if (!matchedCounter?._id) {
-      throw new Error(`Khong tim thay quay so ${normalizedIdentifier}`);
+      throw new Error(`Không tìm thấy quầy số ${normalizedIdentifier}`);
     }
 
     return matchedCounter._id;
@@ -122,7 +126,7 @@ export default function CounterDisplayPage() {
       setError(null);
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "Unknown display error";
+        err instanceof Error ? err.message : "Lỗi hiển thị không xác định";
       setError(errorMessage);
       setResolvedCounterId(null);
       console.error("Error fetching display data:", err);
@@ -155,7 +159,7 @@ export default function CounterDisplayPage() {
         applySnapshot(payload.data);
 
         if (payload.reason === "ticket-called" && payload.data.currentTicket) {
-          const textToSpeak = `Moi so ${payload.data.currentTicket.formattedNumber} den ${payload.data.counter.name}`;
+          const textToSpeak = `Mời số ${payload.data.currentTicket.formattedNumber} đến ${payload.data.counter.name}`;
           void speakVietnameseAnnouncement(textToSpeak);
         }
       },
@@ -202,7 +206,7 @@ export default function CounterDisplayPage() {
           color: "#666",
         }}
       >
-        Dang tai...
+        Đang tải...
       </div>
     );
   }
@@ -221,7 +225,7 @@ export default function CounterDisplayPage() {
           color: "#dc3545",
         }}
       >
-        {error || "Khong co du lieu"}
+        {error || "Không có dữ liệu"}
       </div>
     );
   }
@@ -240,65 +244,131 @@ export default function CounterDisplayPage() {
         height: "100vh",
         display: "flex",
         flexDirection: "column",
-        background: "#f5f5f5",
+        background:
+          "linear-gradient(180deg, #fdfcf9 0%, #f8f6f1 32%, #f3f3f3 100%)",
         padding: 0,
         margin: 0,
         overflow: "hidden",
         fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+        color: "#003366",
       }}
     >
       <div
         style={{
-          background: "white",
-          padding: "12px 24px",
+          background:
+            "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,249,240,0.98) 100%)",
+          padding: "clamp(8px, 1.2vw, 14px) clamp(18px, 2.4vw, 34px)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           borderBottom: "3px solid #003366",
-          minHeight: 108,
+          minHeight: TOP_HEADER_HEIGHT,
+          flexShrink: 0,
+          gap: "clamp(8px, 1vw, 14px)",
+        }}
+      >
+        <img
+          src="/assets/logotoaan.png"
+          alt="Logo"
+          style={{
+            height: "clamp(52px, 6vw, 78px)",
+            width: "auto",
+            flexShrink: 0,
+          }}
+        />
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            justifyContent: "center",
+            textAlign: "left",
+          }}
+        >
+          <h1
+            style={{
+              margin: 0,
+              fontSize: "clamp(20px, 2.7vw, 34px)",
+              fontWeight: 800,
+              lineHeight: 1.1,
+              letterSpacing: "0.2px",
+              textTransform: "uppercase",
+              color: "#111111",
+            }}
+          >
+            TÒA ÁN NHÂN DÂN KHU VỰC 1
+          </h1>
+          <div
+            style={{
+              marginTop: "clamp(2px, 0.4vh, 6px)",
+              fontSize: "clamp(14px, 1.7vw, 22px)",
+              fontWeight: 500,
+              lineHeight: 1.1,
+              letterSpacing: "0px",
+              color: "#6c6c6c",
+            }}
+          >
+            Thành Phố Hồ Chí Minh
+          </div>
+        </div>
+      </div>
+
+      <div
+        style={{
+          background: "white",
+          padding: "clamp(6px, 0.8vh, 12px) clamp(16px, 2vw, 28px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderBottom: "3px solid #003366",
+          minHeight: TITLE_HEADER_HEIGHT,
           flexShrink: 0,
           flexDirection: "column",
-          gap: 6,
+          gap: "clamp(4px, 0.6vh, 8px)",
           textAlign: "center",
         }}
       >
         <h2
           style={{
             margin: 0,
-            fontSize: 28,
-            fontWeight: 700,
+            fontSize: "clamp(24px, 3.2vw, 42px)",
+            fontWeight: 800,
             color: "#003366",
-            letterSpacing: "1px",
-            lineHeight: 1.2,
+            letterSpacing: "0.4px",
+            lineHeight: 1.02,
+            textTransform: "uppercase",
           }}
         >
-          DANH SACH CHO XU LY
+          Danh Sách Chờ Xử Lý
         </h2>
-        <h2
+
+        <div
           style={{
-            margin: 0,
-            fontSize: 24,
-            fontWeight: 700,
+            fontSize: "clamp(24px, 2.8vw, 38px)",
+            fontWeight: 800,
             color: "#003366",
-            letterSpacing: "1px",
+            letterSpacing: "0.3px",
             textTransform: "uppercase",
-            lineHeight: 1.2,
-            background: "#ffd54f",
+            lineHeight: 1.1,
+            background: "linear-gradient(180deg, #ffd86d 0%, #ffc233 100%)",
             borderRadius: 999,
-            padding: "8px 24px",
-            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.12)",
+            padding: "clamp(6px, 0.7vh, 10px) clamp(18px, 1.8vw, 28px)",
+            boxShadow: "0 6px 16px rgba(0, 0, 0, 0.12)",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "fit-content",
+            minWidth: 0,
+            maxWidth: "90vw",
+            whiteSpace: "nowrap",
           }}
         >
           {data.counter.name}
-        </h2>
+        </div>
       </div>
 
-      <div
-        style={{
-          flex: 1,
-          overflow: "hidden",
-        }}
-      >
+      <div style={{ flex: 1, overflow: "hidden" }}>
         <table
           style={{
             width: "100%",
@@ -308,113 +378,128 @@ export default function CounterDisplayPage() {
             tableLayout: "fixed",
           }}
         >
+          <colgroup>
+            <col style={{ width: "26%" }} />
+            <col style={{ width: "25%" }} />
+            <col style={{ width: "27%" }} />
+            <col style={{ width: "22%" }} />
+          </colgroup>
+
           <thead>
             <tr style={{ background: "#003366", color: "white" }}>
               <th
                 style={{
-                  padding: "18px 16px",
+                  padding: "clamp(12px, 1.2vh, 18px) clamp(10px, 1.2vw, 18px)",
                   textAlign: "center",
-                  fontWeight: 700,
-                  fontSize: 24,
-                  letterSpacing: "1px",
-                  borderRight: "2px solid #e0e0e0",
-                  height: 72,
-                  lineHeight: 1.3,
+                  fontWeight: 800,
+                  fontSize: "clamp(24px, 2.8vw, 38px)",
+                  letterSpacing: "0.5px",
+                  borderRight: "2px solid rgba(255, 255, 255, 0.28)",
+                  height: TABLE_HEADER_HEIGHT,
+                  lineHeight: 1.12,
                   whiteSpace: "normal",
                   wordBreak: "break-word",
                   overflowWrap: "anywhere",
+                  textTransform: "uppercase",
                 }}
               >
-                DICH VU
+                Dịch Vụ
               </th>
               <th
                 style={{
-                  padding: "18px 16px",
+                  padding: "clamp(12px, 1.2vh, 18px) clamp(10px, 1.2vw, 18px)",
                   textAlign: "center",
-                  fontWeight: 700,
-                  fontSize: 24,
-                  letterSpacing: "1px",
-                  borderRight: "2px solid #e0e0e0",
-                  height: 72,
-                  lineHeight: 1.3,
+                  fontWeight: 800,
+                  fontSize: "clamp(24px, 2.8vw, 38px)",
+                  letterSpacing: "0.5px",
+                  borderRight: "2px solid rgba(255, 255, 255, 0.28)",
+                  height: TABLE_HEADER_HEIGHT,
+                  lineHeight: 1.12,
                   whiteSpace: "normal",
                   wordBreak: "break-word",
                   overflowWrap: "anywhere",
+                  textTransform: "uppercase",
                 }}
               >
-                SO PHIEU
+                Số Phiếu
               </th>
               <th
                 style={{
-                  padding: "18px 16px",
+                  padding: "clamp(12px, 1.2vh, 18px) clamp(10px, 1.2vw, 18px)",
                   textAlign: "center",
-                  fontWeight: 700,
-                  fontSize: 24,
-                  letterSpacing: "1px",
-                  borderRight: "2px solid #e0e0e0",
-                  height: 72,
-                  lineHeight: 1.3,
+                  fontWeight: 800,
+                  fontSize: "clamp(24px, 2.8vw, 38px)",
+                  letterSpacing: "0.5px",
+                  borderRight: "2px solid rgba(255, 255, 255, 0.28)",
+                  height: TABLE_HEADER_HEIGHT,
+                  lineHeight: 1.12,
                   whiteSpace: "normal",
                   wordBreak: "break-word",
                   overflowWrap: "anywhere",
+                  textTransform: "uppercase",
                 }}
               >
-                DUONG SU
+                Đương Sự
               </th>
               <th
                 style={{
-                  padding: "18px 16px",
+                  padding: "clamp(12px, 1.2vh, 18px) clamp(10px, 1.2vw, 18px)",
                   textAlign: "center",
-                  fontWeight: 700,
-                  letterSpacing: "1px",
-                  height: 72,
-                  fontSize: 22,
-                  lineHeight: 1.3,
+                  fontWeight: 800,
+                  fontSize: "clamp(22px, 2.5vw, 34px)",
+                  letterSpacing: "0.5px",
+                  height: TABLE_HEADER_HEIGHT,
+                  lineHeight: 1.12,
                   whiteSpace: "normal",
                   wordBreak: "break-word",
                   overflowWrap: "anywhere",
+                  textTransform: "uppercase",
                 }}
               >
-                TRANG THAI
+                Trạng Thái
               </th>
             </tr>
           </thead>
+
           <tbody>
             {displayTickets.length > 0 ? (
               displayTickets.map((ticket, index) => {
                 const isEvenRow = (index + 1) % 2 === 0;
-                const bgColor = isEvenRow ? "#003366" : "white";
-                const textColor = isEvenRow ? "white" : "#003366";
+                const bgColor = isEvenRow ? "#0a3d78" : "#ffffff";
+                const textColor = isEvenRow ? "#ffffff" : "#003366";
                 const statusDisplay =
                   ticket.status === "processing"
                     ? "Đang xử lý"
                     : ticket.status === "completed"
-                      ? "Hoan thanh"
+                      ? "Hoàn thành"
                       : "Chờ";
                 const statusColor =
                   ticket.status === "processing"
-                    ? "#51CF66"
+                    ? "#4dd06d"
                     : ticket.status === "completed"
-                      ? "#FF6B6B"
-                      : "#FFB84D";
+                      ? "#ff6b6b"
+                      : "#ffb347";
 
                 return (
                   <tr
                     key={ticket.id}
                     style={{
                       background: bgColor,
-                      borderBottom: "2px solid #e0e0e0",
-                      height: "calc((100vh - 196px) / 5)",
+                      borderBottom:
+                        index === displayTickets.length - 1
+                          ? "none"
+                          : "2px solid #d8e0ea",
+                      height: `calc((100vh - ${TOP_HEADER_HEIGHT} - ${TITLE_HEADER_HEIGHT} - ${TABLE_HEADER_HEIGHT} - 8px) / 5)`,
                     }}
                   >
                     <td
                       style={{
-                        padding: "12px 18px",
+                        padding: "clamp(10px, 1vh, 16px) clamp(8px, 1vw, 16px)",
                         textAlign: "center",
-                        fontWeight: 700,
+                        fontWeight: 800,
                         color: textColor,
-                        fontSize: 32,
-                        borderRight: "1px solid rgba(0, 0, 0, 0.1)",
+                        fontSize: "clamp(28px, 3vw, 42px)",
+                        borderRight: "1px solid rgba(0, 0, 0, 0.12)",
                         verticalAlign: "middle",
                         overflow: "hidden",
                       }}
@@ -424,27 +509,28 @@ export default function CounterDisplayPage() {
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          height: "100%",
                           width: "100%",
+                          height: "100%",
                           textAlign: "center",
                           whiteSpace: "normal",
                           wordBreak: "break-word",
                           overflowWrap: "anywhere",
-                          lineHeight: 1.2,
+                          lineHeight: 1.15,
                         }}
                       >
                         {formatServiceName(ticket.serviceName)}
                       </div>
                     </td>
+
                     <td
                       style={{
-                        padding: "12px 18px",
+                        padding: "clamp(10px, 1vh, 16px) clamp(8px, 1vw, 16px)",
                         textAlign: "center",
-                        fontWeight: 700,
+                        fontWeight: 800,
                         color: textColor,
-                        fontSize: 52,
-                        letterSpacing: "2px",
-                        borderRight: "1px solid rgba(0, 0, 0, 0.1)",
+                        fontSize: "clamp(50px, 5.4vw, 78px)",
+                        letterSpacing: "1px",
+                        borderRight: "1px solid rgba(0, 0, 0, 0.12)",
                         verticalAlign: "middle",
                         overflow: "hidden",
                       }}
@@ -454,23 +540,23 @@ export default function CounterDisplayPage() {
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          height: "100%",
                           width: "100%",
-                          textAlign: "center",
+                          height: "100%",
                           lineHeight: 1,
                         }}
                       >
                         {ticket.formattedNumber}
                       </div>
                     </td>
+
                     <td
                       style={{
-                        padding: "12px 18px",
+                        padding: "clamp(10px, 1vh, 16px) clamp(8px, 1vw, 16px)",
                         textAlign: "center",
-                        fontWeight: 700,
+                        fontWeight: 800,
                         color: textColor,
-                        fontSize: 32,
-                        borderRight: "1px solid rgba(0, 0, 0, 0.1)",
+                        fontSize: "clamp(28px, 3vw, 42px)",
+                        borderRight: "1px solid rgba(0, 0, 0, 0.12)",
                         overflow: "hidden",
                         verticalAlign: "middle",
                       }}
@@ -480,24 +566,25 @@ export default function CounterDisplayPage() {
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          height: "100%",
                           width: "100%",
+                          height: "100%",
                           textAlign: "center",
                           whiteSpace: "pre-line",
-                          wordBreak: "keep-all",
+                          wordBreak: "break-word",
                           overflowWrap: "break-word",
-                          lineHeight: 1.2,
+                          lineHeight: 1.15,
                         }}
                       >
                         {formatDisplayStaffName(ticket.customerName)}
                       </div>
                     </td>
+
                     <td
                       style={{
-                        padding: "12px 18px",
+                        padding: "clamp(10px, 1vh, 16px) clamp(8px, 1vw, 16px)",
                         textAlign: "center",
                         color: textColor,
-                        fontSize: 32,
+                        fontSize: "clamp(26px, 2.8vw, 40px)",
                         verticalAlign: "middle",
                         overflow: "hidden",
                       }}
@@ -507,24 +594,25 @@ export default function CounterDisplayPage() {
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          height: "100%",
                           width: "100%",
+                          height: "100%",
                           textAlign: "center",
                         }}
                       >
                         <span
                           style={{
                             color: statusColor,
-                            padding: "14px 18px",
-                            borderRadius: "25px",
+                            padding:
+                              "clamp(10px, 1vh, 14px) clamp(12px, 1.2vw, 18px)",
+                            borderRadius: 999,
                             fontWeight: 900,
                             display: "inline-block",
-                            minWidth: "120px",
-                            fontSize: 32,
+                            minWidth: "min(18vw, 180px)",
+                            fontSize: "clamp(28px, 2.8vw, 40px)",
                             whiteSpace: "normal",
                             wordBreak: "break-word",
                             overflowWrap: "anywhere",
-                            lineHeight: 1.2,
+                            lineHeight: 1.1,
                           }}
                         >
                           {statusDisplay}
@@ -545,7 +633,7 @@ export default function CounterDisplayPage() {
                     fontSize: 26,
                   }}
                 >
-                  Chua co ve nao
+                  Chưa có vé nào
                 </td>
               </tr>
             )}
