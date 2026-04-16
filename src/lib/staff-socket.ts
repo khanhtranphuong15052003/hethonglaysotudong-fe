@@ -89,8 +89,12 @@ export function createStaffSocket() {
   });
 }
 
-export function joinCounterRoom(socket: Socket, counterId: string) {
+export function joinStaffDisplayRoom(socket: Socket, counterId: string) {
   socket.emit("join-staff-display", { counterId });
+}
+
+export function joinCounterRoom(socket: Socket, counterId: string) {
+  joinStaffDisplayRoom(socket, counterId);
   socket.emit("join-counter", counterId);
 }
 

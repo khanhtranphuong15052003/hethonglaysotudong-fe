@@ -18,29 +18,27 @@ export default function CounterDisplayPage() {
 
   useEffect(() => {
     const loadData = async () => {
-      // Lấy thông tin quầy
       const counter = await getCounterById(counterId);
-      if (counter) {
-        setCounterName(counter.name);
+      if (!counter) {
+        setCounterName("");
+        setWaitingList([]);
+        setNowCalling(null);
+        setLoading(false);
+        return;
       }
 
-      // Lấy danh sách chờ
+      setCounterName(counter.name);
+
       const waiting = getWaitingListByCounter(counterId);
       setWaitingList(waiting);
 
-      // Lấy số đang gọi
       const calling = getNowCallingByCounter(counterId);
       setNowCalling(calling || null);
 
       setLoading(false);
     };
 
-    loadData();
-
-    // Refresh data mỗi 2 giây
-    const interval = setInterval(loadData, 2000);
-
-    return () => clearInterval(interval);
+    void loadData();
   }, [counterId]);
 
   if (loading) {

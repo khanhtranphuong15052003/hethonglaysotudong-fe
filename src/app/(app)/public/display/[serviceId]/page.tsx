@@ -16,29 +16,30 @@ export default function PublicDisplayPage() {
 
   useEffect(() => {
     const loadData = async () => {
-      // Lấy thông tin dịch vụ
       const services = await getServices();
       const service = services.find((s) => s._id === serviceId);
-      // Service found, proceed with rest of logic
 
-      // Lấy danh sách chờ của dịch vụ
+      if (!service) {
+        setWaitingList([]);
+        setNowCalling(null);
+        setLoading(false);
+        return;
+      }
+
       const waiting = getWaitingListByService(serviceId);
       setWaitingList(waiting);
 
-      // Lấy số đang gọi
       const calling = getNowCalling();
       if (calling && calling.serviceId === serviceId) {
         setNowCalling(calling);
+      } else {
+        setNowCalling(null);
       }
 
       setLoading(false);
     };
 
-    loadData();
-
-    // Refresh dữ liệu mỗi 2 giây
-    const interval = setInterval(loadData, 2000);
-    return () => clearInterval(interval);
+    void loadData();
   }, [serviceId]);
 
   if (loading) {
@@ -66,7 +67,6 @@ export default function PublicDisplayPage() {
         padding: 20,
       }}
     >
-      {/* LEFT: Người đang phục vụ */}
       <div
         style={{
           display: "flex",
@@ -128,7 +128,6 @@ export default function PublicDisplayPage() {
         )}
       </div>
 
-      {/* RIGHT: Danh sách chờ */}
       <div
         style={{
           display: "flex",

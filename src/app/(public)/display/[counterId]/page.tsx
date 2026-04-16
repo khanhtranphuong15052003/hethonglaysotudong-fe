@@ -7,8 +7,7 @@ import {
   StaffDisplaySnapshot,
   StaffDisplayUpdatedPayload,
   createStaffSocket,
-  joinCounterRoom,
-  onJoinedCounterRoom,
+  joinStaffDisplayRoom,
   onSocketError,
   onStaffDisplayUpdated,
 } from "@/lib/staff-socket";
@@ -170,15 +169,12 @@ export default function CounterDisplayPage() {
         }
       },
     );
-    const unsubscribeJoined = onJoinedCounterRoom(socket, (payload) => {
-      console.log("Joined counter room on display screen:", payload);
-    });
     const unsubscribeSocketError = onSocketError(socket, (payload) => {
       console.error("Display socket room error:", payload);
     });
 
     socket.on("connect", () => {
-      joinCounterRoom(socket, resolvedCounterId);
+      joinStaffDisplayRoom(socket, resolvedCounterId);
       console.log("Socket connected on display screen");
     });
 
@@ -192,7 +188,6 @@ export default function CounterDisplayPage() {
 
     return () => {
       unsubscribe();
-      unsubscribeJoined();
       unsubscribeSocketError();
       socket.disconnect();
     };

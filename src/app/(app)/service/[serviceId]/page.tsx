@@ -32,6 +32,7 @@ function ServiceTicketContent() {
   const [step, setStep] = useState<"form" | "done">("form");
   const [ticket, setTicket] = useState<DisplayTicket | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state
   const [fullName, setFullName] = useState("");
@@ -87,24 +88,30 @@ function ServiceTicketContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (isSubmitting) {
+      return;
+    }
+
     if (!fullName.trim()) {
-      showToast("Vui lĂ²ng nháº­p há» tĂªn", "error");
+      showToast("Vui lòng nhập họ tên", "error");
       return;
     }
 
     if (!phoneNumber.trim()) {
-      showToast("Vui lĂ²ng nháº­p sá»‘ Ä‘iá»‡n thoáº¡i", "error");
+      showToast("Vui lòng nhập số điện thoại", "error");
       return;
     }
 
     if (!/^[0-9]{10}$/.test(phoneNumber.replace(/\D/g, ""))) {
-      showToast("Sá»‘ Ä‘iá»‡n thoáº¡i khĂ´ng há»£p lá»‡", "error");
+      showToast("Vui lòng nhập đúng số điện thoại - 10 số", "error");
       return;
     }
 
     if (!service) {
       return;
     }
+
+    setIsSubmitting(true);
     try {
       const result = await createTicket({
         serviceId,
@@ -124,14 +131,15 @@ function ServiceTicketContent() {
         };
         setTicket(ticketData as DisplayTicket);
         setStep("done");
-        showToast(result.message || "Lay so thanh cong!", "success");
+        showToast(result.message || "Lấy số thành công!", "success");
       } else {
-        throw new Error(result.message || "Loi khi tao ve");
+        throw new Error(result.message || "Lỗi khi tạo vé");
       }
     } catch (error) {
+      setIsSubmitting(false);
       console.error("Error creating ticket:", error);
       showToast(
-        error instanceof Error ? error.message : "Khong the ket noi voi server",
+        error instanceof Error ? error.message : "Không thể kết nối với server",
         "error",
       );
     }
@@ -180,9 +188,9 @@ function ServiceTicketContent() {
   if (!service) {
     return (
       <div style={{ padding: 20 }}>
-        <p>Dá»‹ch vá»¥ khĂ´ng tá»“n táº¡i</p>
+        <p>Dịch vụ không tồn tại</p>
         <Link href="/">
-          <button style={{ padding: 10, fontSize: 16 }}>Quay láº¡i</button>
+          <button style={{ padding: 10, fontSize: 16 }}>Quay lại</button>
         </Link>
       </div>
     );
@@ -228,7 +236,7 @@ function ServiceTicketContent() {
           </p>
 
           <form onSubmit={handleSubmit}>
-            {/* Há» vĂ  tĂªn */}
+            {/* Họ và tên */}
             <div style={{ marginBottom: 20 }}>
               <label
                 style={{
@@ -259,7 +267,7 @@ function ServiceTicketContent() {
 
            
 
-            {/* Sá»‘ Ä‘iá»‡n thoáº¡i */}
+            {/* Số điện thoại */}
             <div style={{ marginBottom: 20 }}>
               <label
                 style={{
@@ -289,28 +297,33 @@ function ServiceTicketContent() {
             </div>
 
             <div style={{ display: "flex", gap: 10 }}>
-              {/* Quay láº¡i */}
+              {/* Quay lại */}
               <Link href="/" style={{ flex: 1, textDecoration: "none" }}>
                 <button
                   type="button"
+                  disabled={isSubmitting}
                   style={{
                     width: "100%",
                     padding: 16,
                     height: 70,
                     fontSize: 24,
-                    background: "#f0f0f0",
-                    color: "#333",
+                    background: isSubmitting ? "#d1d5db" : "#f0f0f0",
+                    color: isSubmitting ? "#6b7280" : "#333",
                     border: "1px solid #ccc",
                     borderRadius: 4,
-                    cursor: "pointer",
+                    cursor: isSubmitting ? "not-allowed" : "pointer",
                     transition: "background 0.3s ease",
                     
                   }}
                   onMouseOver={(e) => {
-                    e.currentTarget.style.background = "#e0e0e0";
+                    if (!isSubmitting) {
+                      e.currentTarget.style.background = "#e0e0e0";
+                    }
                   }}
                   onMouseOut={(e) => {
-                    e.currentTarget.style.background = "#f0f0f0";
+                    e.currentTarget.style.background = isSubmitting
+                      ? "#d1d5db"
+                      : "#f0f0f0";
                   }}
                 >
                  Quay lại
@@ -320,24 +333,30 @@ function ServiceTicketContent() {
               {/* Submit button */}
               <button
                 type="submit"
+                disabled={isSubmitting}
                 style={{
                   flex: 1,
                   padding: 16,
                   height: 70,
                   fontSize: 32,
                   fontWeight: 600,
-                  background: "#003366",
+                  background: isSubmitting ? "#9ca3af" : "#003366",
                   color: "white",
                   border: "none",
                   borderRadius: 4,
-                  cursor: "pointer",
+                  cursor: isSubmitting ? "not-allowed" : "pointer",
                   transition: "background 0.3s ease",
+                  opacity: isSubmitting ? 0.95 : 1,
                 }}
                 onMouseOver={(e) => {
-                  e.currentTarget.style.background = "#001f47";
+                  if (!isSubmitting) {
+                    e.currentTarget.style.background = "#001f47";
+                  }
                 }}
                 onMouseOut={(e) => {
-                  e.currentTarget.style.background = "#003366";
+                  e.currentTarget.style.background = isSubmitting
+                    ? "#9ca3af"
+                    : "#003366";
                 }}
               >
                 Lấy số
@@ -362,7 +381,7 @@ function ServiceTicketContent() {
             }}
           >
             <h1 style={{ color: "#003366",  fontSize: 28,  textTransform: "uppercase", paddingTop: 10 }}>
-               YÊU CẦU CỦA ÔNG BÀ ĐÃ ĐƯỢC TIẾP NHẬN
+               YÊU CẦU CỦA QUÝ ÔNG BÀ ĐÃ ĐƯỢC TIẾP NHẬN
             </h1>
             <p style={{ fontSize: 16, color: "#333", marginBottom: 4 }}>
              Xin vui lòng chờ đến thứ tự
@@ -388,7 +407,7 @@ function ServiceTicketContent() {
                   gap: 10,
                 }}
               >
-                {/* Cá»™t 1: ThĂ´ng tin yĂªu cáº§u */}
+                {/* Cột 1: Thông tin yêu cầu */}
                 <div
                   style={{
                     paddingLeft: 15,
@@ -447,7 +466,7 @@ function ServiceTicketContent() {
                   
                 </div>
 
-                {/* Cá»™t 2: Sá»‘ thá»© tá»± */}
+                {/* Cột 2: Số thứ tự */}
                 <div
                   style={{
                     textAlign: "center",
@@ -459,7 +478,7 @@ function ServiceTicketContent() {
                   }}
                 >
                   {/* <p style={{ fontSize: 14, color: "#5c6773", marginBottom:"4px" , textTransform: "uppercase"}}>
-                     Sá» THá»¨ Tá»° Cá»¦A Ă”NG BĂ€ :
+                     SỐ THỨ TỰ CỦA QUÝ ÔNG BÀ :
                   </p> */}
                   <h2
                     style={{
@@ -475,7 +494,7 @@ function ServiceTicketContent() {
                   </h2>
                 </div>
 
-                {/* Cá»™t 3: MĂ£ QR */}
+                {/* Cột 3: Mã QR */}
                 <div
                   style={{
                     flex: 1,
@@ -492,7 +511,7 @@ function ServiceTicketContent() {
                 >
                   <Image
                     src={ticket?.qrCode || `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`}
-                    alt="QR mĂ£ sá»‘ thá»© tá»±"
+                    alt="QR mã số thứ tự"
                     width={200}
                     height={200}
                     style={{ display: "block" }}
@@ -580,6 +599,85 @@ function ServiceTicketContent() {
         type={toast.type}
         onClose={() => setToast({ ...toast, isOpen: false })}
       />
+      {isSubmitting && step === "form" && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(6, 20, 37, 0.46)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1100,
+            padding: 24,
+          }}
+        >
+          <div
+            style={{
+              background: "#fff",
+              width: "min(100%, 360px)",
+              borderRadius: 20,
+              boxShadow: "0 28px 70px rgba(8, 27, 54, 0.24)",
+              border: "1px solid rgba(0, 51, 102, 0.08)",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                background: "#003366",
+                color: "#fff",
+                padding: "18px 22px",
+              }}
+            >
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: 20,
+                  fontWeight: 700,
+                }}
+              >
+                Đang xử lý
+              </h2>
+            </div>
+            <div
+              style={{
+                padding: 24,
+                color: "#31475f",
+                lineHeight: 1.6,
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+              }}
+            >
+              <div
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  border: "3px solid #dbe6f2",
+                  borderTopColor: "#003366",
+                  animation: "serviceTicketSpin 0.8s linear infinite",
+                  flexShrink: 0,
+                }}
+              />
+              <p style={{ margin: 0, fontSize: 16 }}>
+                Vui lòng chờ trong giây lát, hệ thống đang tạo vé cho bạn.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      <style jsx>{`
+        @keyframes serviceTicketSpin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
     </div>
   );
 }
@@ -591,3 +689,5 @@ export default function ServiceTicketPage() {
     </Suspense>
   );
 }
+
+

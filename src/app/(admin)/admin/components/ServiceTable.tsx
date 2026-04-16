@@ -19,6 +19,8 @@ import { FONTAWESOME_ICONS } from "@/constants/icons";
 import { useToast } from "@/hooks/useToast";
 import ToastContainer from "@/components/ToastContainer";
 import Pagination from "./Pagination";
+import AdminTableFilter from "./AdminTableFilter";
+import { getSequentialTagColorStyle } from "@/lib/adminTagColors";
 import "@/styles/admin-table.css";
 
 // Helper function to get icon component from name
@@ -33,6 +35,8 @@ export default function ServiceTable() {
   const [counters, setCounters] = useState<Counter[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterCounterId, setFilterCounterId] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedCounters, setSelectedCounters] = useState<string[]>([]);
@@ -226,10 +230,27 @@ export default function ServiceTable() {
     }
   };
 
-  const filteredServices = services.filter(
-    (service) =>
+  const filteredServices = services.filter((service) => {
+    const matchesSearch =
       service.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      service.name.toLowerCase().includes(searchTerm.toLowerCase()),
+      service.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCounter =
+      filterCounterId === "all" ||
+      service.counters?.some((counter) => counter._id === filterCounterId);
+    const matchesStatus =
+      filterStatus === "all" ||
+      (filterStatus === "active" ? service.isActive : !service.isActive);
+
+    return matchesSearch && matchesCounter && matchesStatus;
+  });
+
+  const counterColorMap = new Map(
+    [...counters]
+      .sort((a, b) => a.number - b.number || a.name.localeCompare(b.name))
+      .map((counter, index) => [
+        counter._id,
+        getSequentialTagColorStyle(index),
+      ]),
   );
 
   // Pagination logic
@@ -248,7 +269,7 @@ export default function ServiceTable() {
   // Reset to first page when search changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, filterCounterId, filterStatus]);
 
   return (
     <div className="admin-table-container">
@@ -258,6 +279,43 @@ export default function ServiceTable() {
           QUẢN LÝ DỊCH VỤ
         </div>
         <div className="admin-table-actions">
+          <AdminTableFilter
+            activeCount={[filterCounterId, filterStatus].filter(
+              (value) => value !== "all",
+            ).length}
+            onReset={() => {
+              setFilterCounterId("all");
+              setFilterStatus("all");
+            }}
+            sections={[
+              {
+                id: "service-counter",
+                label: "Quầy dịch vụ",
+                value: filterCounterId,
+                onChange: setFilterCounterId,
+                options: [
+                  { label: "Tất cả quầy", value: "all" },
+                  ...[...counters]
+                    .sort((a, b) => a.number - b.number)
+                    .map((counter) => ({
+                      label: `${counter.name} (${counter.code})`,
+                      value: counter._id,
+                    })),
+                ],
+              },
+              {
+                id: "service-status",
+                label: "Trạng thái",
+                value: filterStatus,
+                onChange: setFilterStatus,
+                options: [
+                  { label: "Tất cả trạng thái", value: "all" },
+                  { label: "Hoạt động", value: "active" },
+                  { label: "Vô hiệu", value: "inactive" },
+                ],
+              },
+            ]}
+          />
           <input
             type="text"
             className="admin-table-search"
@@ -309,7 +367,21 @@ export default function ServiceTable() {
                   <td>
                     <div className="table-cell-counters">
                       {service.counters?.map((counter) => (
-                        <span key={counter._id}>
+                        <span
+                          key={counter._id}
+                          className="table-cell-tag"
+                          style={{
+                            background:
+                              counterColorMap.get(counter._id)?.background ||
+                              "#dbeafe",
+                            borderLeftColor:
+                              counterColorMap.get(counter._id)?.border ||
+                              "#2563eb",
+                            color:
+                              counterColorMap.get(counter._id)?.color ||
+                              "#1e3a8a",
+                          }}
+                        >
                           {counter.name} ({counter.code})
                         </span>
                       ))}
@@ -501,7 +573,7 @@ export default function ServiceTable() {
                       marginBottom: "15px",
                     }}
                   >
-                    {FONTAWESOME_ICONS.map((icon: any) => {
+                    {FONTAWESOME_ICONS.map((icon: (typeof FONTAWESOME_ICONS)[number]) => {
                       const IconComponent = getIconComponent(icon.class);
                       return (
                         <button

@@ -17,6 +17,8 @@ import {
 import { useToast } from "@/hooks/useToast";
 import ToastContainer from "@/components/ToastContainer";
 import Pagination from "./Pagination";
+import AdminTableFilter from "./AdminTableFilter";
+import { getSequentialTagColorStyle } from "@/lib/adminTagColors";
 import "@/styles/admin-table.css";
 
 export default function CounterTable() {
@@ -25,6 +27,8 @@ export default function CounterTable() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterServiceId, setFilterServiceId] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
@@ -189,10 +193,30 @@ export default function CounterTable() {
     }
   };
 
-  const filteredCounters = counters.filter(
-    (counter) =>
+  const filteredCounters = counters.filter((counter) => {
+    const matchesSearch =
       counter.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      counter.name.toLowerCase().includes(searchTerm.toLowerCase()),
+      counter.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesService =
+      filterServiceId === "all" ||
+      counter.services.some((service) => service._id === filterServiceId);
+    const matchesStatus =
+      filterStatus === "all" ||
+      (filterStatus === "active" ? counter.isActive : !counter.isActive);
+
+    return matchesSearch && matchesService && matchesStatus;
+  });
+
+  const serviceColorMap = new Map(
+    [...services]
+      .sort(
+        (a, b) =>
+          a.displayOrder - b.displayOrder || a.name.localeCompare(b.name),
+      )
+      .map((service, index) => [
+        service._id,
+        getSequentialTagColorStyle(index),
+      ]),
   );
 
   // Pagination logic
@@ -211,7 +235,7 @@ export default function CounterTable() {
   // Reset to first page when search changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, filterServiceId, filterStatus]);
 
   return (
     <div className="admin-table-container">
@@ -221,6 +245,47 @@ export default function CounterTable() {
           QUẢN LÝ QUẦY
         </div>
         <div className="admin-table-actions">
+          <AdminTableFilter
+            activeCount={[filterServiceId, filterStatus].filter(
+              (value) => value !== "all",
+            ).length}
+            onReset={() => {
+              setFilterServiceId("all");
+              setFilterStatus("all");
+            }}
+            sections={[
+              {
+                id: "counter-service",
+                label: "Dịch vụ",
+                value: filterServiceId,
+                onChange: setFilterServiceId,
+                options: [
+                  { label: "Tất cả dịch vụ", value: "all" },
+                  ...[...services]
+                    .sort(
+                      (a, b) =>
+                        a.displayOrder - b.displayOrder ||
+                        a.name.localeCompare(b.name),
+                    )
+                    .map((service) => ({
+                      label: `${service.name} (${service.code})`,
+                      value: service._id,
+                    })),
+                ],
+              },
+              {
+                id: "counter-status",
+                label: "Trạng thái",
+                value: filterStatus,
+                onChange: setFilterStatus,
+                options: [
+                  { label: "Tất cả trạng thái", value: "all" },
+                  { label: "Hoạt động", value: "active" },
+                  { label: "Vô hiệu", value: "inactive" },
+                ],
+              },
+            ]}
+          />
           <input
             type="text"
             className="admin-table-search"
@@ -262,7 +327,21 @@ export default function CounterTable() {
                   <td>
                     <div className="table-cell-counters">
                       {counter.services.map((service) => (
-                        <span key={service._id}>
+                        <span
+                          key={service._id}
+                          className="table-cell-tag"
+                          style={{
+                            background:
+                              serviceColorMap.get(service._id)?.background ||
+                              "#bfdbfe",
+                            borderLeftColor:
+                              serviceColorMap.get(service._id)?.border ||
+                              "#2563eb",
+                            color:
+                              serviceColorMap.get(service._id)?.color ||
+                              "#1e3a8a",
+                          }}
+                        >
                           {service.name} ({service.code})
                         </span>
                       ))}
@@ -312,6 +391,11 @@ export default function CounterTable() {
           kết quả
         </span>
       </div>
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
       {showModal && (
         <div className="admin-modal">
           <div className="admin-modal-content">

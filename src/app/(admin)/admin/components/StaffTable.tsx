@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/useToast";
 import { useAdminSessionGuard } from "@/hooks/useAdminSessionGuard";
 import ToastContainer from "@/components/ToastContainer";
 import Pagination from "./Pagination";
+import AdminTableFilter from "./AdminTableFilter";
 import "@/styles/admin-table.css";
 
 export default function StaffTable() {
@@ -26,6 +27,8 @@ export default function StaffTable() {
   const [counters, setCounters] = useState<Counter[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterCounterId, setFilterCounterId] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -174,11 +177,21 @@ export default function StaffTable() {
     }
   };
 
-  const filteredStaff = staffList.filter(
-    (staff) =>
+  const filteredStaff = staffList.filter((staff) => {
+    const matchesSearch =
       staff.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      staff.fullName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      staff.fullName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCounter =
+      filterCounterId === "all" ||
+      (filterCounterId === "unassigned"
+        ? !staff.counterId
+        : staff.counterId?._id === filterCounterId);
+    const matchesStatus =
+      filterStatus === "all" ||
+      (filterStatus === "active" ? staff.isActive : !staff.isActive);
+
+    return matchesSearch && matchesCounter && matchesStatus;
+  });
 
   const totalPages = Math.ceil(filteredStaff.length / itemsPerPage);
   const currentItems = filteredStaff.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -189,7 +202,7 @@ export default function StaffTable() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, filterCounterId, filterStatus]);
 
   return (
     <div className="admin-table-container">
@@ -198,6 +211,44 @@ export default function StaffTable() {
           QUẢN LÝ NHÂN VIÊN
         </div>
         <div className="admin-table-actions">
+          <AdminTableFilter
+            activeCount={[filterCounterId, filterStatus].filter(
+              (value) => value !== "all",
+            ).length}
+            onReset={() => {
+              setFilterCounterId("all");
+              setFilterStatus("all");
+            }}
+            sections={[
+              {
+                id: "staff-counter",
+                label: "Quầy trực",
+                value: filterCounterId,
+                onChange: setFilterCounterId,
+                options: [
+                  { label: "Tất cả quầy", value: "all" },
+                  { label: "Chưa gán quầy", value: "unassigned" },
+                  ...[...counters]
+                    .sort((a, b) => a.number - b.number)
+                    .map((counter) => ({
+                      label: `${counter.name} (${counter.code})`,
+                      value: counter._id,
+                    })),
+                ],
+              },
+              {
+                id: "staff-status",
+                label: "Trạng thái",
+                value: filterStatus,
+                onChange: setFilterStatus,
+                options: [
+                  { label: "Tất cả trạng thái", value: "all" },
+                  { label: "Hoạt động", value: "active" },
+                  { label: "Vô hiệu", value: "inactive" },
+                ],
+              },
+            ]}
+          />
           <input
             type="text"
             className="admin-table-search"

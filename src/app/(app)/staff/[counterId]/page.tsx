@@ -31,12 +31,10 @@ export default function StaffCounterPage() {
   const counterId = params.counterId as string;
 
   const [counter, setCounter] = useState<Counter | null>(null);
-  const [services, setServices] = useState<Service[]>([]);
   const [staffName, setStaffName] = useState<string>("");
   const [waitingTickets, setWaitingTickets] = useState<Ticket[]>([]);
   const [totalWaiting, setTotalWaiting] = useState(0);
   const [currentTicket, setCurrentTicket] = useState<Ticket | null>(null);
-  const [activeServiceTab, setActiveServiceTab] = useState<string>("Tất cả");
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
   const [toast, setToast] = useState<{
@@ -85,7 +83,6 @@ export default function StaffCounterPage() {
     staffName?: string;
   }) => {
     setCounter(snapshot.counter);
-    setServices(snapshot.services);
     setCurrentTicket(snapshot.currentTicket);
     setWaitingTickets(snapshot.waitingTickets);
     setTotalWaiting(snapshot.totalWaiting ?? snapshot.waitingTickets.length);
@@ -213,23 +210,6 @@ export default function StaffCounterPage() {
     };
   }, [authenticated, counterId]);
 
-  useEffect(() => {
-    const serviceTabNames = Array.from(
-      new Set(
-        [...services.map((service) => service.name), ...waitingTickets.map((ticket) => ticket.serviceName)]
-          .map((name) => name?.trim())
-          .filter(Boolean),
-      ),
-    ) as string[];
-
-    if (
-      activeServiceTab !== "Tất cả" &&
-      !serviceTabNames.includes(activeServiceTab)
-    ) {
-      setActiveServiceTab("Tất cả");
-    }
-  }, [activeServiceTab, services, waitingTickets]);
-
   const handleCallNext = async () => {
     if (currentTicket) {
       showToast("Đang gọi lại!", "info");
@@ -342,25 +322,6 @@ export default function StaffCounterPage() {
     );
   }
 
-  const serviceTabNames = Array.from(
-    new Set(
-      [...services.map((service) => service.name), ...waitingTickets.map((ticket) => ticket.serviceName)]
-        .map((name) => name?.trim())
-        .filter(Boolean),
-    ),
-  ) as string[];
-
-  const visibleWaitingTickets =
-    activeServiceTab === "Tất cả"
-      ? waitingTickets
-      : waitingTickets.filter(
-          (ticket) => ticket.serviceName?.trim() === activeServiceTab,
-        );
-  const displayedWaitingCount =
-    activeServiceTab === "Tất cả"
-      ? totalWaiting
-      : visibleWaitingTickets.length;
-
   return (
     <div
       className="staff-page"
@@ -411,69 +372,6 @@ export default function StaffCounterPage() {
         style={{ display: "flex", gap: "clamp(16px, 2vw, 28px)", flex: 1 }}
       >
         <div className="staff-page__queue" style={{ flex: 0.6, overflowY: "auto", minWidth: 0 }}>
-          <div
-            className="staff-page__tabs"
-            style={{
-              display: "flex",
-              gap: "clamp(8px, 1vw, 12px)",
-              flexWrap: "wrap",
-              marginBottom: "clamp(12px, 1.6vh, 18px)",
-            }}
-          >
-            <button
-              onClick={() => setActiveServiceTab("Tất cả")}
-              className="staff-page__tab"
-              style={{
-                padding: "clamp(8px, 0.9vh, 12px) clamp(14px, 1.4vw, 22px)",
-                fontSize: "clamp(14px, 1.2vw, 20px)",
-                fontWeight: 700,
-                borderRadius: 999,
-                border:
-                  activeServiceTab === "Tất cả"
-                    ? "2px solid #003366"
-                    : "1px solid rgba(0, 61, 130, 0.25)",
-                background:
-                  activeServiceTab === "Tất cả" ? "#003366" : "#ffffff",
-                color: activeServiceTab === "Tất cả" ? "#ffffff" : "#003366",
-                cursor: "pointer",
-                boxShadow:
-                  activeServiceTab === "Tất cả"
-                    ? "0 8px 18px rgba(0, 61, 130, 0.18)"
-                    : "none",
-              }}
-            >
-              Tất cả
-            </button>
-            {serviceTabNames.map((serviceName) => {
-              const isActive = activeServiceTab === serviceName;
-
-              return (
-                <button
-                  key={serviceName}
-                  onClick={() => setActiveServiceTab(serviceName)}
-                  className="staff-page__tab"
-                  style={{
-                    padding: "clamp(8px, 0.9vh, 12px) clamp(14px, 1.4vw, 22px)",
-                    fontSize: "clamp(14px, 1.2vw, 20px)",
-                    fontWeight: 700,
-                    borderRadius: 999,
-                    border: isActive
-                      ? "2px solid #003366"
-                      : "1px solid rgba(0, 61, 130, 0.25)",
-                    background: isActive ? "#003366" : "#ffffff",
-                    color: isActive ? "#ffffff" : "#003366",
-                    cursor: "pointer",
-                    boxShadow: isActive
-                      ? "0 8px 18px rgba(0, 61, 130, 0.18)"
-                      : "none",
-                  }}
-                >
-                  {serviceName}
-                </button>
-              );
-            })}
-          </div>
-
           <h3
             className="staff-page__title"
             style={{
@@ -484,9 +382,7 @@ export default function StaffCounterPage() {
               fontWeight: 700,
             }}
           >
-            Danh sách chờ
-            {activeServiceTab !== "Tất cả" ? ` - Tab ${activeServiceTab}` : ""}
-            {` (${displayedWaitingCount} người)`}
+            Danh sách chờ ({totalWaiting} người)
           </h3>
           <table
             className="staff-page__table"
@@ -514,8 +410,8 @@ export default function StaffCounterPage() {
               </tr>
             </thead>
             <tbody>
-              {visibleWaitingTickets.slice(0, 10).length > 0 ? (
-                visibleWaitingTickets.slice(0, 10).map((ticket, index) => (
+              {waitingTickets.slice(0, 10).length > 0 ? (
+                waitingTickets.slice(0, 10).map((ticket, index) => (
                   <tr key={ticket.id} style={{ borderBottom: "1px solid #e0e0e0" }}>
                     <td style={{ padding: "clamp(8px, 0.95vh, 12px) 10px", borderRight: "1px solid #ddd", fontSize: "clamp(14px, 1vw, 18px)" }}>
                       {index + 1}
@@ -655,16 +551,6 @@ export default function StaffCounterPage() {
             gap: 14px !important;
           }
 
-          .staff-page__tabs {
-            margin-bottom: 12px !important;
-            gap: 8px !important;
-          }
-
-          .staff-page__tab {
-            padding: 8px 16px !important;
-            font-size: 15px !important;
-          }
-
           .staff-page__title {
             margin-bottom: 12px !important;
             font-size: 24px !important;
@@ -791,8 +677,7 @@ export default function StaffCounterPage() {
             align-items: stretch !important;
           }
 
-          .staff-page__logout,
-          .staff-page__tab {
+          .staff-page__logout {
             width: 100%;
             justify-content: center;
           }

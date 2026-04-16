@@ -538,7 +538,7 @@ export default function AdminDashboardTech() {
                 <FiCpu />
                 Trung tâm điều hành thống kê thời gian thực
               </span>
-              <h1 className={styles.heroTitle}>Dashboard Điều Hành</h1>
+              <h1 className={styles.heroTitle}>HỆ THỐNG LẤY SỐ TỰ ĐỘNG TẠI TÒA ÁN NHÂN DÂN KV1</h1>
               <p className={styles.heroSubtitle}>
                 Theo dõi hàng chờ, năng lực phục vụ, hiệu suất theo quầy và biến
                 động xử lý hồ sơ trong ngày và trong tháng trên một màn hình.

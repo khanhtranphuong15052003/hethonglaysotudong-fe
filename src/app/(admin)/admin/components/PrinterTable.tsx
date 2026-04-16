@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { FiEdit, FiPrinter } from "react-icons/fi";
+import { FiEdit } from "react-icons/fi";
 import { RiDeleteBin6Line } from "react-icons/ri";
 import {
   getPrinters,
@@ -13,6 +13,7 @@ import {
 import { useToast } from "@/hooks/useToast";
 import ToastContainer from "@/components/ToastContainer";
 import Pagination from "./Pagination";
+import AdminTableFilter from "./AdminTableFilter";
 import "@/styles/admin-table.css";
 
 export default function PrinterTable() {
@@ -20,6 +21,8 @@ export default function PrinterTable() {
   const [printers, setPrinters] = useState<Printer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterDefault, setFilterDefault] = useState("all");
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -55,7 +58,7 @@ export default function PrinterTable() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [error]);
 
   useEffect(() => {
     void fetchPrinters();
@@ -151,12 +154,20 @@ export default function PrinterTable() {
     }
   };
 
-  const filteredPrinters = printers.filter(
-    (printer) =>
+  const filteredPrinters = printers.filter((printer) => {
+    const matchesSearch =
       printer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       printer.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      printer.location.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      printer.location.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      filterStatus === "all" ||
+      (filterStatus === "active" ? printer.isActive : !printer.isActive);
+    const matchesDefault =
+      filterDefault === "all" ||
+      (filterDefault === "default" ? printer.isDefault : !printer.isDefault);
+
+    return matchesSearch && matchesStatus && matchesDefault;
+  });
 
   // Pagination logic
   const totalPages = Math.ceil(filteredPrinters.length / itemsPerPage);
@@ -170,7 +181,7 @@ export default function PrinterTable() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, filterStatus, filterDefault]);
 
   return (
     <div className="admin-table-container">
@@ -179,6 +190,39 @@ export default function PrinterTable() {
          QUẢN LÝ MÁY IN
         </div>
         <div className="admin-table-actions">
+          <AdminTableFilter
+            activeCount={[filterStatus, filterDefault].filter(
+              (value) => value !== "all",
+            ).length}
+            onReset={() => {
+              setFilterStatus("all");
+              setFilterDefault("all");
+            }}
+            sections={[
+              {
+                id: "printer-status",
+                label: "Trạng thái",
+                value: filterStatus,
+                onChange: setFilterStatus,
+                options: [
+                  { label: "Tất cả trạng thái", value: "all" },
+                  { label: "Hoạt động", value: "active" },
+                  { label: "Vô hiệu", value: "inactive" },
+                ],
+              },
+              {
+                id: "printer-default",
+                label: "Mặc định",
+                value: filterDefault,
+                onChange: setFilterDefault,
+                options: [
+                  { label: "Tất cả", value: "all" },
+                  { label: "Máy in mặc định", value: "default" },
+                  { label: "Không mặc định", value: "not-default" },
+                ],
+              },
+            ]}
+          />
           <input
             type="text"
             className="admin-table-search"
