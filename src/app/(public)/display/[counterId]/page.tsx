@@ -245,20 +245,31 @@ export default function CounterDisplayPage() {
 
   return (
     <div
+      className="displayPortraitViewport"
       style={{
         width: "100vw",
         height: VIEWPORT_HEIGHT,
-        display: "flex",
-        flexDirection: "column",
-        background:
-          "linear-gradient(180deg, #fdfcf9 0%, #f8f6f1 32%, #f3f3f3 100%)",
-        padding: 0,
-        margin: 0,
         overflow: "hidden",
-        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-        color: "#003366",
+        background: "#091a2d",
       }}
     >
+      <div className="displayPortraitStage">
+        <div
+          className="displayPortraitCanvas"
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            background:
+              "linear-gradient(180deg, #fdfcf9 0%, #f8f6f1 32%, #f3f3f3 100%)",
+            padding: 0,
+            margin: 0,
+            overflow: "hidden",
+            fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+            color: "#003366",
+          }}
+        >
       <div
         style={{
           background:
@@ -468,7 +479,7 @@ export default function CounterDisplayPage() {
                     ? "Đang xử lý"
                     : ticket.status === "completed"
                       ? "Hoàn thành"
-                      : "Chờ";
+                      : "Vui lòng chờ";
                 const statusColor =
                   isProcessing
                     ? "#4dd06d"
@@ -505,7 +516,7 @@ export default function CounterDisplayPage() {
                         textAlign: "center",
                         fontWeight: 800,
                         color: textColor,
-                        fontSize: "clamp(24px, 2.5vw, 38px)",
+                        fontSize: "clamp(30px, 3vw, 46px)",
                         borderRight: "1px solid rgba(0, 0, 0, 0.12)",
                         verticalAlign: "middle",
                         overflow: "hidden",
@@ -554,13 +565,13 @@ export default function CounterDisplayPage() {
                           justifyContent: "center",
                           width: "100%",
                           height: "100%",
-                          gap: "clamp(4px, 0.5vh, 8px)",
+                          gap: "clamp(6px, 0.65vh, 10px)",
                           overflow: "hidden",
                         }}
                       >
                         <div
                           style={{
-                            fontSize: "clamp(42px, 4.6vw, 72px)",
+                            fontSize: "clamp(56px, 5.8vw, 88px)",
                             fontWeight: 800,
                             letterSpacing: "1px",
                             lineHeight: 0.96,
@@ -571,7 +582,7 @@ export default function CounterDisplayPage() {
                         </div>
                         <div
                           style={{
-                            fontSize: "clamp(18px, 1.9vw, 30px)",
+                            fontSize: "clamp(24px, 2.35vw, 36px)",
                             fontWeight: 700,
                             lineHeight: 1.05,
                             maxWidth: "100%",
@@ -619,7 +630,7 @@ export default function CounterDisplayPage() {
                             justifyContent: "center",
                             minWidth: 0,
                             maxWidth: "100%",
-                            fontSize: "clamp(21px, 2vw, 31px)",
+                            fontSize: "clamp(28px, 2.5vw, 40px)",
                             whiteSpace: "normal",
                             wordBreak: "break-word",
                             overflowWrap: "anywhere",
@@ -687,6 +698,35 @@ export default function CounterDisplayPage() {
       </div>
 
       <style>{`
+        .displayPortraitStage {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+        }
+
+        .displayPortraitCanvas {
+          width: 100%;
+          height: 100%;
+        }
+
+        @media (orientation: landscape) {
+          .displayPortraitStage {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100dvh;
+            height: 100vw;
+            transform: rotate(-90deg);
+            transform-origin: top left;
+          }
+
+          .displayPortraitCanvas {
+            width: 100%;
+            height: 100%;
+          }
+        }
+
         @keyframes processingRowPulse {
           0%, 100% {
             box-shadow: inset 0 0 0 3px rgba(77, 208, 109, 0.78);
@@ -696,6 +736,8 @@ export default function CounterDisplayPage() {
           }
         }
       `}</style>
+        </div>
+      </div>
     </div>
   );
 }
