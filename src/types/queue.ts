@@ -4,6 +4,7 @@ export interface Ticket {
   id: string;
   number: number;
   formattedNumber: string;
+  displayNumber?: string;
   customerName: string;
   phone: string;
   status: "waiting" | "processing" | "completed" | "skipped";

@@ -19,10 +19,12 @@ export default function AdminLoginLayout({
       <div
         style={{
           flex: 1,
+          minHeight: "calc(100vh - 140px)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: "40px 20px",
+          padding: "clamp(24px, 4vh, 48px) 20px",
+          boxSizing: "border-box",
         }}
       >
         {children}

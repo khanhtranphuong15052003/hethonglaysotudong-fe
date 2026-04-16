@@ -1,4 +1,11 @@
-import { Counter } from "@/types/queue";
+export interface Counter {
+  _id: string;
+  counterId: string;
+  name: string;
+  serviceId: string;
+  serviceName: string;
+  status: string;
+}
 
 export const counters: Counter[] = [
   {

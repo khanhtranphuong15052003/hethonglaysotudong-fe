@@ -21,6 +21,7 @@ interface Ticket {
   id: string;
   number: number;
   formattedNumber: string;
+  displayNumber?: string;
   customerName: string;
   phone: string;
   status: "waiting" | "processing" | "completed" | "skipped" | "done";
@@ -56,9 +57,14 @@ const formatDisplayStaffName = (name: string) => {
   )}`;
 };
 
-const TOP_HEADER_HEIGHT = "clamp(88px, 9vh, 118px)";
-const TITLE_HEADER_HEIGHT = "clamp(84px, 9vh, 122px)";
-const TABLE_HEADER_HEIGHT = "clamp(76px, 7vh, 102px)";
+const VIEWPORT_HEIGHT = "100dvh";
+const TOP_HEADER_HEIGHT = "clamp(84px, 8.4dvh, 126px)";
+const INFO_BAR_HEIGHT = "clamp(42px, 4.4dvh, 68px)";
+const TABLE_HEADER_HEIGHT = "clamp(54px, 5.2dvh, 76px)";
+const TABLE_SAFE_SPACE = "clamp(12px, 1.4dvh, 24px)";
+const TABLE_ROW_HEIGHT = `calc((${VIEWPORT_HEIGHT} - ${TOP_HEADER_HEIGHT} - ${INFO_BAR_HEIGHT} - ${TABLE_HEADER_HEIGHT} - ${TABLE_SAFE_SPACE}) / 5)`;
+const getTicketDisplayNumber = (ticket?: Ticket | null) =>
+  ticket?.displayNumber || ticket?.formattedNumber || String(ticket?.number ?? "").padStart(3, "0");
 
 export default function CounterDisplayPage() {
   const params = useParams();
@@ -159,7 +165,7 @@ export default function CounterDisplayPage() {
         applySnapshot(payload.data);
 
         if (payload.reason === "ticket-called" && payload.data.currentTicket) {
-          const textToSpeak = `Mời số ${payload.data.currentTicket.formattedNumber} đến ${payload.data.counter.name}`;
+          const textToSpeak = `Mời số ${getTicketDisplayNumber(payload.data.currentTicket as Ticket)} đến ${payload.data.counter.name}`;
           void speakVietnameseAnnouncement(textToSpeak);
         }
       },
@@ -197,7 +203,7 @@ export default function CounterDisplayPage() {
       <div
         style={{
           width: "100vw",
-          height: "100vh",
+          height: VIEWPORT_HEIGHT,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -216,7 +222,7 @@ export default function CounterDisplayPage() {
       <div
         style={{
           width: "100vw",
-          height: "100vh",
+          height: VIEWPORT_HEIGHT,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -241,7 +247,7 @@ export default function CounterDisplayPage() {
     <div
       style={{
         width: "100vw",
-        height: "100vh",
+        height: VIEWPORT_HEIGHT,
         display: "flex",
         flexDirection: "column",
         background:
@@ -257,114 +263,122 @@ export default function CounterDisplayPage() {
         style={{
           background:
             "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,249,240,0.98) 100%)",
-          padding: "clamp(8px, 1.2vw, 14px) clamp(18px, 2.4vw, 34px)",
+          padding: "clamp(8px, 1vh, 14px) clamp(18px, 2.4vw, 34px)",
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
+          justifyContent: "space-between",
           borderBottom: "3px solid #003366",
           minHeight: TOP_HEADER_HEIGHT,
           flexShrink: 0,
           gap: "clamp(8px, 1vw, 14px)",
         }}
       >
-        <img
-          src="/assets/logotoaan.png"
-          alt="Logo"
+        <div
           style={{
-            height: "clamp(52px, 6vw, 78px)",
-            width: "auto",
-            flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "clamp(8px, 1vw, 14px)",
+            minWidth: 0,
+            flex: "1 1 auto",
           }}
-        />
+        >
+          <img
+            src="/assets/logotoaan.png"
+            alt="Logo"
+            style={{
+              height: "clamp(46px, 5vw, 68px)",
+              maxHeight: "clamp(40px, 4.5vw, 60px)",
+              width: "auto",
+              flexShrink: 0,
+            }}
+          />
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+              justifyContent: "center",
+              textAlign: "left",
+              minWidth: 0,
+            }}
+          >
+            <h1
+              style={{
+                margin: 0,
+                fontSize: "clamp(18px, 2.4vw, 30px)",
+                fontWeight: 800,
+                lineHeight: 1.1,
+                letterSpacing: "0.2px",
+                textTransform: "uppercase",
+                color: "#111111",
+              }}
+            >
+              TÒA ÁN NHÂN DÂN KHU VỰC 1
+            </h1>
+            <div
+              style={{
+                marginTop: "clamp(1px, 0.25vh, 4px)",
+                fontSize: "clamp(13px, 1.3vw, 18px)",
+                fontWeight: 500,
+                lineHeight: 1.1,
+                letterSpacing: "0px",
+                color: "#6c6c6c",
+              }}
+            >
+              Thành Phố Hồ Chí Minh
+            </div>
+          </div>
+        </div>
 
         <div
           style={{
             display: "flex",
             flexDirection: "column",
-            alignItems: "flex-start",
+            alignItems: "flex-end",
             justifyContent: "center",
-            textAlign: "left",
+            textAlign: "right",
+            gap: "clamp(4px, 0.6vh, 8px)",
+            flexShrink: 0,
           }}
         >
-          <h1
+          <h2
             style={{
               margin: 0,
-              fontSize: "clamp(20px, 2.7vw, 34px)",
+              fontSize: "clamp(18px, 2.2vw, 32px)",
               fontWeight: 800,
-              lineHeight: 1.1,
-              letterSpacing: "0.2px",
+              color: "#003366",
+              letterSpacing: "0.4px",
+              lineHeight: 1.02,
               textTransform: "uppercase",
-              color: "#111111",
             }}
           >
-            TÒA ÁN NHÂN DÂN KHU VỰC 1
-          </h1>
+            Danh Sách Chờ Xử Lý
+          </h2>
           <div
             style={{
-              marginTop: "clamp(2px, 0.4vh, 6px)",
-              fontSize: "clamp(14px, 1.7vw, 22px)",
-              fontWeight: 500,
+              fontSize: "clamp(18px, 2vw, 28px)",
+              fontWeight: 800,
+              color: "#003366",
+              letterSpacing: "0.3px",
+              textTransform: "uppercase",
               lineHeight: 1.1,
-              letterSpacing: "0px",
-              color: "#6c6c6c",
+              background: "linear-gradient(180deg, #ffd86d 0%, #ffc233 100%)",
+              borderRadius: 999,
+              padding: "clamp(4px, 0.4vh, 7px) clamp(18px, 1.8vw, 28px)",
+              boxShadow: "0 6px 16px rgba(0, 0, 0, 0.12)",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "fit-content",
+              minWidth: 0,
+              maxWidth: "42vw",
+              whiteSpace: "nowrap",
             }}
           >
-            Thành Phố Hồ Chí Minh
+            {data.counter.name}
           </div>
-        </div>
-      </div>
-
-      <div
-        style={{
-          background: "white",
-          padding: "clamp(6px, 0.8vh, 12px) clamp(16px, 2vw, 28px)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderBottom: "3px solid #003366",
-          minHeight: TITLE_HEADER_HEIGHT,
-          flexShrink: 0,
-          flexDirection: "column",
-          gap: "clamp(4px, 0.6vh, 8px)",
-          textAlign: "center",
-        }}
-      >
-        <h2
-          style={{
-            margin: 0,
-            fontSize: "clamp(24px, 3.2vw, 42px)",
-            fontWeight: 800,
-            color: "#003366",
-            letterSpacing: "0.4px",
-            lineHeight: 1.02,
-            textTransform: "uppercase",
-          }}
-        >
-          Danh Sách Chờ Xử Lý
-        </h2>
-
-        <div
-          style={{
-            fontSize: "clamp(24px, 2.8vw, 38px)",
-            fontWeight: 800,
-            color: "#003366",
-            letterSpacing: "0.3px",
-            textTransform: "uppercase",
-            lineHeight: 1.1,
-            background: "linear-gradient(180deg, #ffd86d 0%, #ffc233 100%)",
-            borderRadius: 999,
-            padding: "clamp(6px, 0.7vh, 10px) clamp(18px, 1.8vw, 28px)",
-            boxShadow: "0 6px 16px rgba(0, 0, 0, 0.12)",
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "fit-content",
-            minWidth: 0,
-            maxWidth: "90vw",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {data.counter.name}
         </div>
       </div>
 
@@ -379,9 +393,8 @@ export default function CounterDisplayPage() {
           }}
         >
           <colgroup>
-            <col style={{ width: "26%" }} />
-            <col style={{ width: "25%" }} />
-            <col style={{ width: "27%" }} />
+            <col style={{ width: "28%" }} />
+            <col style={{ width: "50%" }} />
             <col style={{ width: "22%" }} />
           </colgroup>
 
@@ -389,7 +402,7 @@ export default function CounterDisplayPage() {
             <tr style={{ background: "#003366", color: "white" }}>
               <th
                 style={{
-                  padding: "clamp(12px, 1.2vh, 18px) clamp(10px, 1.2vw, 18px)",
+                  padding: "clamp(10px, 1vh, 14px) clamp(10px, 1.2vw, 18px)",
                   textAlign: "center",
                   fontWeight: 800,
                   fontSize: "clamp(24px, 2.8vw, 38px)",
@@ -407,7 +420,7 @@ export default function CounterDisplayPage() {
               </th>
               <th
                 style={{
-                  padding: "clamp(12px, 1.2vh, 18px) clamp(10px, 1.2vw, 18px)",
+                  padding: "clamp(10px, 1vh, 14px) clamp(10px, 1.2vw, 18px)",
                   textAlign: "center",
                   fontWeight: 800,
                   fontSize: "clamp(24px, 2.8vw, 38px)",
@@ -421,29 +434,11 @@ export default function CounterDisplayPage() {
                   textTransform: "uppercase",
                 }}
               >
-                Số Phiếu
+                Thông Tin
               </th>
               <th
                 style={{
-                  padding: "clamp(12px, 1.2vh, 18px) clamp(10px, 1.2vw, 18px)",
-                  textAlign: "center",
-                  fontWeight: 800,
-                  fontSize: "clamp(24px, 2.8vw, 38px)",
-                  letterSpacing: "0.5px",
-                  borderRight: "2px solid rgba(255, 255, 255, 0.28)",
-                  height: TABLE_HEADER_HEIGHT,
-                  lineHeight: 1.12,
-                  whiteSpace: "normal",
-                  wordBreak: "break-word",
-                  overflowWrap: "anywhere",
-                  textTransform: "uppercase",
-                }}
-              >
-                Đương Sự
-              </th>
-              <th
-                style={{
-                  padding: "clamp(12px, 1.2vh, 18px) clamp(10px, 1.2vw, 18px)",
+                  padding: "clamp(10px, 1vh, 14px) clamp(10px, 1.2vw, 18px)",
                   textAlign: "center",
                   fontWeight: 800,
                   fontSize: "clamp(22px, 2.5vw, 34px)",
@@ -465,16 +460,17 @@ export default function CounterDisplayPage() {
             {displayTickets.length > 0 ? (
               displayTickets.map((ticket, index) => {
                 const isEvenRow = (index + 1) % 2 === 0;
+                const isProcessing = ticket.status === "processing";
                 const bgColor = isEvenRow ? "#0a3d78" : "#ffffff";
                 const textColor = isEvenRow ? "#ffffff" : "#003366";
                 const statusDisplay =
-                  ticket.status === "processing"
+                  isProcessing
                     ? "Đang xử lý"
                     : ticket.status === "completed"
                       ? "Hoàn thành"
                       : "Chờ";
                 const statusColor =
-                  ticket.status === "processing"
+                  isProcessing
                     ? "#4dd06d"
                     : ticket.status === "completed"
                       ? "#ff6b6b"
@@ -484,24 +480,37 @@ export default function CounterDisplayPage() {
                   <tr
                     key={ticket.id}
                     style={{
-                      background: bgColor,
+                      background: isProcessing
+                        ? isEvenRow
+                          ? "linear-gradient(180deg, #164b87 0%, #0a3d78 100%)"
+                          : "linear-gradient(180deg, #ffffff 0%, #f3fbf5 100%)"
+                        : bgColor,
                       borderBottom:
                         index === displayTickets.length - 1
                           ? "none"
                           : "2px solid #d8e0ea",
-                      height: `calc((100vh - ${TOP_HEADER_HEIGHT} - ${TITLE_HEADER_HEIGHT} - ${TABLE_HEADER_HEIGHT} - 8px) / 5)`,
+                      height: TABLE_ROW_HEIGHT,
+                      maxHeight: TABLE_ROW_HEIGHT,
+                      boxShadow: isProcessing
+                        ? "inset 0 0 0 3px rgba(77, 208, 109, 0.85)"
+                        : "none",
+                      animation: isProcessing
+                        ? "processingRowPulse 1.8s ease-in-out infinite"
+                        : "none",
                     }}
                   >
                     <td
                       style={{
-                        padding: "clamp(10px, 1vh, 16px) clamp(8px, 1vw, 16px)",
+                        padding: "clamp(8px, 0.8vh, 12px) clamp(8px, 1vw, 16px)",
                         textAlign: "center",
                         fontWeight: 800,
                         color: textColor,
-                        fontSize: "clamp(28px, 3vw, 42px)",
+                        fontSize: "clamp(24px, 2.5vw, 38px)",
                         borderRight: "1px solid rgba(0, 0, 0, 0.12)",
                         verticalAlign: "middle",
                         overflow: "hidden",
+                        height: TABLE_ROW_HEIGHT,
+                        maxHeight: TABLE_ROW_HEIGHT,
                       }}
                     >
                       <div
@@ -516,6 +525,8 @@ export default function CounterDisplayPage() {
                           wordBreak: "break-word",
                           overflowWrap: "anywhere",
                           lineHeight: 1.15,
+                          maxHeight: "100%",
+                          overflow: "hidden",
                         }}
                       >
                         {formatServiceName(ticket.serviceName)}
@@ -524,69 +535,66 @@ export default function CounterDisplayPage() {
 
                     <td
                       style={{
-                        padding: "clamp(10px, 1vh, 16px) clamp(8px, 1vw, 16px)",
+                        padding: "clamp(8px, 0.8vh, 12px) clamp(8px, 1vw, 16px)",
                         textAlign: "center",
-                        fontWeight: 800,
                         color: textColor,
-                        fontSize: "clamp(50px, 5.4vw, 78px)",
-                        letterSpacing: "1px",
+                        fontSize: "clamp(22px, 2.2vw, 34px)",
                         borderRight: "1px solid rgba(0, 0, 0, 0.12)",
                         verticalAlign: "middle",
                         overflow: "hidden",
+                        height: TABLE_ROW_HEIGHT,
+                        maxHeight: TABLE_ROW_HEIGHT,
                       }}
                     >
                       <div
                         style={{
                           display: "flex",
+                          flexDirection: "column",
                           alignItems: "center",
                           justifyContent: "center",
                           width: "100%",
                           height: "100%",
-                          lineHeight: 1,
+                          gap: "clamp(4px, 0.5vh, 8px)",
+                          overflow: "hidden",
                         }}
                       >
-                        {ticket.formattedNumber}
+                        <div
+                          style={{
+                            fontSize: "clamp(42px, 4.6vw, 72px)",
+                            fontWeight: 800,
+                            letterSpacing: "1px",
+                            lineHeight: 0.96,
+                            color: textColor,
+                          }}
+                        >
+                          {getTicketDisplayNumber(ticket)}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "clamp(18px, 1.9vw, 30px)",
+                            fontWeight: 700,
+                            lineHeight: 1.05,
+                            maxWidth: "100%",
+                            whiteSpace: "normal",
+                            wordBreak: "break-word",
+                            overflowWrap: "anywhere",
+                          }}
+                        >
+                          {formatDisplayStaffName(ticket.customerName)}
+                        </div>
                       </div>
                     </td>
 
                     <td
                       style={{
-                        padding: "clamp(10px, 1vh, 16px) clamp(8px, 1vw, 16px)",
-                        textAlign: "center",
-                        fontWeight: 800,
-                        color: textColor,
-                        fontSize: "clamp(28px, 3vw, 42px)",
-                        borderRight: "1px solid rgba(0, 0, 0, 0.12)",
-                        overflow: "hidden",
-                        verticalAlign: "middle",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          width: "100%",
-                          height: "100%",
-                          textAlign: "center",
-                          whiteSpace: "pre-line",
-                          wordBreak: "break-word",
-                          overflowWrap: "break-word",
-                          lineHeight: 1.15,
-                        }}
-                      >
-                        {formatDisplayStaffName(ticket.customerName)}
-                      </div>
-                    </td>
-
-                    <td
-                      style={{
-                        padding: "clamp(10px, 1vh, 16px) clamp(8px, 1vw, 16px)",
+                        padding: "clamp(8px, 0.8vh, 12px) clamp(8px, 1vw, 16px)",
                         textAlign: "center",
                         color: textColor,
-                        fontSize: "clamp(26px, 2.8vw, 40px)",
+                        fontSize: "clamp(22px, 2.2vw, 34px)",
                         verticalAlign: "middle",
                         overflow: "hidden",
+                        height: TABLE_ROW_HEIGHT,
+                        maxHeight: TABLE_ROW_HEIGHT,
                       }}
                     >
                       <div
@@ -603,16 +611,26 @@ export default function CounterDisplayPage() {
                           style={{
                             color: statusColor,
                             padding:
-                              "clamp(10px, 1vh, 14px) clamp(12px, 1.2vw, 18px)",
+                              "clamp(4px, 0.45vh, 8px) clamp(8px, 0.9vw, 12px)",
                             borderRadius: 999,
                             fontWeight: 900,
-                            display: "inline-block",
-                            minWidth: "min(18vw, 180px)",
-                            fontSize: "clamp(28px, 2.8vw, 40px)",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            minWidth: 0,
+                            maxWidth: "100%",
+                            fontSize: "clamp(21px, 2vw, 31px)",
                             whiteSpace: "normal",
                             wordBreak: "break-word",
                             overflowWrap: "anywhere",
-                            lineHeight: 1.1,
+                            lineHeight: 1.02,
+                            textAlign: "center",
+                            background: isProcessing
+                              ? "rgba(77, 208, 109, 0.14)"
+                              : "transparent",
+                            boxShadow: isProcessing
+                              ? "0 0 18px rgba(77, 208, 109, 0.18)"
+                              : "none",
                           }}
                         >
                           {statusDisplay}
@@ -625,7 +643,7 @@ export default function CounterDisplayPage() {
             ) : (
               <tr>
                 <td
-                  colSpan={4}
+                  colSpan={3}
                   style={{
                     padding: "40px 24px",
                     textAlign: "center",
@@ -640,6 +658,44 @@ export default function CounterDisplayPage() {
           </tbody>
         </table>
       </div>
+
+      <div
+        style={{
+          background: "linear-gradient(180deg, #e6eef9 0%, #d8e7fb 100%)",
+          padding: "clamp(6px, 0.8vh, 10px) clamp(16px, 2vw, 28px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderTop: "3px solid #003366",
+          minHeight: INFO_BAR_HEIGHT,
+          flexShrink: 0,
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            fontSize: "clamp(18px, 2vw, 28px)",
+            fontWeight: 800,
+            color: "#003366",
+            letterSpacing: "0.3px",
+            textTransform: "uppercase",
+            lineHeight: 1.1,
+          }}
+        >
+          Còn 500 vé chờ xử lý
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes processingRowPulse {
+          0%, 100% {
+            box-shadow: inset 0 0 0 3px rgba(77, 208, 109, 0.78);
+          }
+          50% {
+            box-shadow: inset 0 0 0 5px rgba(77, 208, 109, 1);
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -14,12 +14,14 @@ import {
   Counter,
 } from "@/services/admin.service";
 import { useToast } from "@/hooks/useToast";
+import { useAdminSessionGuard } from "@/hooks/useAdminSessionGuard";
 import ToastContainer from "@/components/ToastContainer";
 import Pagination from "./Pagination";
 import "@/styles/admin-table.css";
 
 export default function StaffTable() {
   const { toasts, removeToast, success, error } = useToast();
+  const guardSession = useAdminSessionGuard();
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [counters, setCounters] = useState<Counter[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,22 +49,28 @@ export default function StaffTable() {
       const data = await getStaff();
       setStaffList(data);
     } catch (err) {
+      if (guardSession(err)) {
+        return;
+      }
       console.error("Failed to fetch staff:", err);
       error("Không thể tải danh sách nhân viên");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [error, guardSession]);
 
   const fetchCounters = useCallback(async () => {
     try {
       const data = await getCounters();
       setCounters(data);
     } catch (err) {
+      if (guardSession(err)) {
+        return;
+      }
       console.error("Failed to fetch counters:", err);
       error("Không thể tải danh sách quầy");
     }
-  }, []);
+  }, [error, guardSession]);
 
   useEffect(() => {
     void fetchStaff();
@@ -131,7 +139,11 @@ export default function StaffTable() {
     try {
       let savedStaff;
       if (editingId) {
-        const payload: any = {
+        const payload: {
+          fullName: string;
+          isActive: boolean;
+          password?: string;
+        } = {
           fullName: formData.fullName,
           isActive: formData.isActive,
         };

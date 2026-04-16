@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArcElement,
   BarElement,
@@ -30,6 +31,7 @@ import {
   DashboardReportData,
   DashboardReportService,
   DashboardServiceOverview,
+  DASHBOARD_AUTH_EXPIRED_ERROR,
   getDashboardOverview,
   getDashboardReport,
 } from "@/services/dashboard.service";
@@ -391,6 +393,7 @@ function CounterCard({
   );
 }
 export default function AdminDashboardTech() {
+  const router = useRouter();
   const [overview, setOverview] = useState<Awaited<ReturnType<typeof getDashboardOverview>> | null>(null);
   const [dailyReport, setDailyReport] = useState<DashboardReportData | null>(null);
   const [monthlyReport, setMonthlyReport] = useState<DashboardReportData | null>(null);
@@ -421,6 +424,13 @@ export default function AdminDashboardTech() {
       } catch (fetchError) {
         if (!mounted) return;
 
+        if (fetchError instanceof Error && fetchError.message === DASHBOARD_AUTH_EXPIRED_ERROR) {
+          localStorage.removeItem("adminToken");
+          localStorage.removeItem("adminUser");
+          router.push("/admin/login?reason=session_expired");
+          return;
+        }
+
         setError(
           fetchError instanceof Error
             ? fetchError.message
@@ -436,7 +446,7 @@ export default function AdminDashboardTech() {
     return () => {
       mounted = false;
     };
-  }, [dailyDate, monthValue]);
+  }, [dailyDate, monthValue, router]);
 
   const overviewStatusData = useMemo(() => {
     if (!overview) return null;
@@ -528,6 +538,11 @@ export default function AdminDashboardTech() {
                 <FiCpu />
                 Trung tâm điều hành thống kê thời gian thực
               </span>
+              <h1 className={styles.heroTitle}>Dashboard Điều Hành</h1>
+              <p className={styles.heroSubtitle}>
+                Theo dõi hàng chờ, năng lực phục vụ, hiệu suất theo quầy và biến
+                động xử lý hồ sơ trong ngày và trong tháng trên một màn hình.
+              </p>
             </div>
             <div className={styles.heroMeta}>
               <div className={styles.metaCard}>
@@ -664,7 +679,7 @@ export default function AdminDashboardTech() {
               <span className={styles.chipSuccess}>TB xử lý {formatMinutes(dailyReport.summary.averageHandleTimeInMinutes)}</span>
             </div>
             <div className={styles.chartWrap}>
-              <Line data={dailyLineData} options={{ ...chartOptionsBase, scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: "rgba(15, 34, 56, 0.08)" } } }, plugins: { ...chartOptionsBase.plugins, tooltip: { ...chartOptionsBase.plugins.tooltip, callbacks: { label: (context) => `${context.dataset.label || "Dữ liệu"}: ${formatUnit(context.parsed.y, "vé")}` } } } }} />
+              <Line data={dailyLineData} options={{ ...chartOptionsBase, scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: "rgba(15, 34, 56, 0.08)" } } }, plugins: { ...chartOptionsBase.plugins, tooltip: { ...chartOptionsBase.plugins.tooltip, callbacks: { label: (context) => `${context.dataset.label || "Dữ liệu"}: ${formatUnit(Number(context.parsed.y ?? 0), "vé")}` } } } }} />
             </div>
           </div>
 
@@ -677,7 +692,7 @@ export default function AdminDashboardTech() {
               <span className={styles.chip}>{formatUnit(monthlyReport.summary.issued, "vé")}</span>
             </div>
             <div className={styles.chartWrap}>
-              <Bar data={monthlyBarData} options={{ ...chartOptionsBase, scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: "rgba(15, 34, 56, 0.08)" } } }, plugins: { ...chartOptionsBase.plugins, tooltip: { ...chartOptionsBase.plugins.tooltip, callbacks: { label: (context) => `${context.dataset.label || "Dữ liệu"}: ${formatUnit(context.parsed.y, "vé")}` } } } }} />
+              <Bar data={monthlyBarData} options={{ ...chartOptionsBase, scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: "rgba(15, 34, 56, 0.08)" } } }, plugins: { ...chartOptionsBase.plugins, tooltip: { ...chartOptionsBase.plugins.tooltip, callbacks: { label: (context) => `${context.dataset.label || "Dữ liệu"}: ${formatUnit(Number(context.parsed.y ?? 0), "vé")}` } } } }} />
             </div>
           </div>
         </section>

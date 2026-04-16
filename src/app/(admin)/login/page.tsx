@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Toast from "@/components/Toast";
 import { loginAdmin } from "@/services/auth.service";
 
-export default function AdminLoginPage() {
+function AdminLoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -16,6 +17,17 @@ export default function AdminLoginPage() {
     message: "",
     type: "info" as "success" | "error" | "warning" | "info",
   });
+
+  useEffect(() => {
+    const reason = searchParams.get("reason");
+    if (reason === "session_expired") {
+      setToast({
+        isOpen: true,
+        message: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+        type: "warning",
+      });
+    }
+  }, [searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,33 +93,36 @@ export default function AdminLoginPage() {
   return (
     <div
       style={{
-        width: 400,
+        width: "min(560px, calc(100vw - 40px))",
         background: "white",
-        borderRadius: 8,
-        padding: 40,
-        boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
+        borderRadius: 16,
+        padding: "clamp(28px, 3vw, 44px)",
+        boxShadow: "0 20px 45px rgba(0,0,0,0.18)",
+        boxSizing: "border-box",
       }}
     >
       <h1
         style={{
           textAlign: "center",
           color: "#003366",
-          marginBottom: 30,
+          marginBottom: 36,
           fontWeight: 700,
+          fontSize: "clamp(28px, 2.2vw, 36px)",
         }}
       >
-        Đăng nhập hệ thống
+        ĐĂNG NHẬP HỆ THỐNG
       </h1>
 
       <form onSubmit={handleLogin}>
         {/* Username */}
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 24 }}>
           <label
             style={{
               display: "block",
-              marginBottom: 8,
+              marginBottom: 10,
               fontWeight: 600,
               color: "#333",
+              fontSize: 20,
             }}
           >
             Tên đăng nhập <span style={{ color: "red" }}>*</span>
@@ -119,10 +134,10 @@ export default function AdminLoginPage() {
             placeholder="Nhập tên đăng nhập"
             style={{
               width: "100%",
-              padding: 12,
-              fontSize: 16,
+              padding: "16px 18px",
+              fontSize: 22,
               border: "1px solid #ccc",
-              borderRadius: 4,
+              borderRadius: 8,
               boxSizing: "border-box",
               fontFamily: "inherit",
             }}
@@ -130,13 +145,14 @@ export default function AdminLoginPage() {
         </div>
 
         {/* Password */}
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 28 }}>
           <label
             style={{
               display: "block",
-              marginBottom: 8,
+              marginBottom: 10,
               fontWeight: 600,
               color: "#333",
+              fontSize: 20,
             }}
           >
             Mật khẩu <span style={{ color: "red" }}>*</span>
@@ -149,13 +165,13 @@ export default function AdminLoginPage() {
               placeholder="Nhập mật khẩu"
               style={{
                 width: "100%",
-                padding: 12,
-                fontSize: 16,
+                padding: "16px 18px",
+                fontSize: 22,
                 border: "1px solid #ccc",
-                borderRadius: 4,
+                borderRadius: 8,
                 boxSizing: "border-box",
                 fontFamily: "inherit",
-                paddingRight: 40,
+                paddingRight: 70,
               }}
             />
             <button
@@ -163,13 +179,13 @@ export default function AdminLoginPage() {
               onClick={() => setShowPassword(!showPassword)}
               style={{
                 position: "absolute",
-                right: 12,
+                right: 14,
                 top: "50%",
                 transform: "translateY(-50%)",
                 background: "none",
                 border: "none",
                 cursor: "pointer",
-                fontSize: 14,
+                fontSize: 18,
                 fontWeight: 600,
                 color: "#666",
                 padding: 0,
@@ -189,13 +205,13 @@ export default function AdminLoginPage() {
           disabled={loading}
           style={{
             width: "100%",
-            padding: 14,
-            fontSize: 16,
+            padding: "18px 20px",
+            fontSize: 24,
             fontWeight: 600,
             background: loading ? "#ccc" : "#003366",
             color: "white",
             border: "none",
-            borderRadius: 4,
+            borderRadius: 8,
             cursor: loading ? "not-allowed" : "pointer",
             transition: "background 0.3s ease",
           }}
@@ -223,5 +239,13 @@ export default function AdminLoginPage() {
 
       {/* Demo Info */}
     </div>
+  );
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminLoginContent />
+    </Suspense>
   );
 }

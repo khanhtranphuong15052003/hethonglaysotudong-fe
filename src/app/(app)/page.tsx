@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import * as RiIcons from "react-icons/ri";
+import type { IconType } from "react-icons";
 
 interface Service {
   _id: string;
@@ -49,7 +50,8 @@ export default function HomePage() {
 
   const renderIcon = (iconName: string, color: string) => {
     if (iconName.startsWith("Ri")) {
-      const IconComponent = (RiIcons as any)[iconName];
+      const iconMap = RiIcons as Record<string, IconType>;
+      const IconComponent = iconMap[iconName];
       if (IconComponent) {
         return <IconComponent size="clamp(34px, 5vh, 62px)" color={color} />;
       }
@@ -137,7 +139,11 @@ export default function HomePage() {
               return (
                 <Link
                   key={s._id}
-                  href={`/service/${s._id}`}
+                  href={
+                    s.counters.length === 1
+                      ? `/service/${s._id}?counterId=${s.counters[0]._id}`
+                      : `/service/${s._id}`
+                  }
                   style={{ display: "block", height: "100%" }}
                 >
                   <button

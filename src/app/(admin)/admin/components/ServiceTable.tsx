@@ -252,7 +252,7 @@ export default function ServiceTable() {
 
   return (
     <div className="admin-table-container">
-      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
       <div className="admin-table-header">
         <div className="font-bold text-2xl" style={{ color: "#003366" }}>
           QUẢN LÝ DỊCH VỤ

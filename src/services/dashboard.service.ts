@@ -1,6 +1,11 @@
 "use client";
 
+import {
+  ADMIN_AUTH_EXPIRED_ERROR,
+} from "@/lib/admin-auth";
+
 const API_BASE = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+export const DASHBOARD_AUTH_EXPIRED_ERROR = ADMIN_AUTH_EXPIRED_ERROR;
 
 const getAuthHeaders = () => {
   const token =
@@ -185,6 +190,19 @@ export async function getDashboardOverview(): Promise<DashboardOverviewData> {
   });
 
   const data = await response.json();
+  const normalizedMessage = String(data?.message || "").toLowerCase();
+  if (
+    response.status === 401 ||
+    normalizedMessage.includes("token") ||
+    normalizedMessage.includes("expired") ||
+    normalizedMessage.includes("hết hạn") ||
+    normalizedMessage.includes("het han") ||
+    normalizedMessage.includes("unauthorized") ||
+    normalizedMessage.includes("không hợp lệ") ||
+    normalizedMessage.includes("khong hop le")
+  ) {
+    throw new Error(DASHBOARD_AUTH_EXPIRED_ERROR);
+  }
   if (!data.success) {
     throw new Error(data.message || "Khong the tai tong quan thong ke");
   }
@@ -216,6 +234,19 @@ export async function getDashboardReport(params: {
   );
 
   const data = await response.json();
+  const normalizedMessage = String(data?.message || "").toLowerCase();
+  if (
+    response.status === 401 ||
+    normalizedMessage.includes("token") ||
+    normalizedMessage.includes("expired") ||
+    normalizedMessage.includes("hết hạn") ||
+    normalizedMessage.includes("het han") ||
+    normalizedMessage.includes("unauthorized") ||
+    normalizedMessage.includes("không hợp lệ") ||
+    normalizedMessage.includes("khong hop le")
+  ) {
+    throw new Error(DASHBOARD_AUTH_EXPIRED_ERROR);
+  }
   if (!data.success) {
     throw new Error(data.message || "Khong the tai bao cao thong ke");
   }

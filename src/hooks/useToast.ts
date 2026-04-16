@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 
 export interface Toast {
   id: string;
@@ -37,22 +37,39 @@ export const useToast = () => {
     [removeToast],
   );
 
-  const success = (message: string, duration?: number) =>
-    addToast(message, "success", duration);
-  const error = (message: string, duration?: number) =>
-    addToast(message, "error", duration);
-  const warning = (message: string, duration?: number) =>
-    addToast(message, "warning", duration);
-  const info = (message: string, duration?: number) =>
-    addToast(message, "info", duration);
+  const success = useCallback(
+    (message: string, duration?: number) =>
+      addToast(message, "success", duration),
+    [addToast],
+  );
 
-  return {
-    toasts,
-    addToast,
-    removeToast,
-    success,
-    error,
-    warning,
-    info,
-  };
+  const error = useCallback(
+    (message: string, duration?: number) =>
+      addToast(message, "error", duration),
+    [addToast],
+  );
+
+  const warning = useCallback(
+    (message: string, duration?: number) =>
+      addToast(message, "warning", duration),
+    [addToast],
+  );
+
+  const info = useCallback(
+    (message: string, duration?: number) => addToast(message, "info", duration),
+    [addToast],
+  );
+
+  return useMemo(
+    () => ({
+      toasts,
+      addToast,
+      removeToast,
+      success,
+      error,
+      warning,
+      info,
+    }),
+    [toasts, addToast, removeToast, success, error, warning, info],
+  );
 };

@@ -44,6 +44,7 @@ export interface StaffDisplaySnapshot {
     id: string;
     number: number;
     formattedNumber: string;
+    displayNumber?: string;
     customerName: string;
     phone: string;
     status: "waiting" | "processing" | "completed" | "skipped" | "done";
@@ -54,6 +55,7 @@ export interface StaffDisplaySnapshot {
     id: string;
     number: number;
     formattedNumber: string;
+    displayNumber?: string;
     customerName: string;
     phone: string;
     status: "waiting" | "processing" | "completed" | "skipped" | "done";

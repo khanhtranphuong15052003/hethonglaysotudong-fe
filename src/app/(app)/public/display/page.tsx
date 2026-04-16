@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getCounters } from "@/mock/counters";
-import type { Counter } from "@/types/queue";
+
+type DisplayCounter = Awaited<ReturnType<typeof getCounters>>[number];
 
 export default function DisplayPage() {
-  const [counters, setCounters] = useState<Counter[]>([]);
+  const [counters, setCounters] = useState<DisplayCounter[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

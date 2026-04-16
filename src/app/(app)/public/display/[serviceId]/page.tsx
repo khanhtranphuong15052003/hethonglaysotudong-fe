@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { Ticket } from "@/types/queue";
 import { getWaitingListByService, getNowCalling } from "@/mock/queue";
+import type { Ticket } from "@/mock/data";
 import { getServices } from "@/mock/services";
 
 export default function PublicDisplayPage() {

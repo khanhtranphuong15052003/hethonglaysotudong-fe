@@ -10,6 +10,17 @@
   height: calc(100vh - 40px - 70px); /* Adjust based on your layout's other elements */
 }
 
+.admin-page-heading {
+  padding: 18px 20px 0;
+}
+
+.admin-page-heading h2 {
+  margin: 0;
+  color: #003366;
+  font-size: 28px;
+  font-weight: 800;
+}
+
 .admin-table-body {
   flex-grow: 1;
   overflow-y: auto; /* Add scroll for vertical overflow */
@@ -390,6 +401,77 @@ table.admin-table td {
   border: 1px solid rgba(0, 51, 102, 0.08);
 }
 
+.admin-confirm-dialog {
+  background: #fff;
+  width: min(100%, 420px);
+  border-radius: 20px;
+  box-shadow: 0 28px 70px rgba(8, 27, 54, 0.24);
+  border: 1px solid rgba(0, 51, 102, 0.08);
+  overflow: hidden;
+}
+
+.admin-confirm-header {
+  background: #003366;
+  color: #fff;
+  padding: 22px 24px;
+}
+
+.admin-confirm-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.admin-confirm-body {
+  padding: 24px;
+  color: #31475f;
+  line-height: 1.6;
+}
+
+.admin-confirm-body p {
+  margin: 0;
+}
+
+.admin-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 18px 18px 20px;
+  border-top: 1px solid #e6edf5;
+}
+
+.admin-confirm-actions button {
+  min-width: 112px;
+  height: 44px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-confirm-actions .submit {
+  background: #16a34a;
+  color: white;
+}
+
+.admin-confirm-actions .submit:hover {
+  background: #15803d;
+  transform: translateY(-1px);
+}
+
+.admin-confirm-actions .cancel {
+  background: #6b7280;
+  color: white;
+}
+
+.admin-confirm-actions .cancel:hover {
+  background: #4b5563;
+  transform: translateY(-1px);
+}
+
 .admin-modal-content h3 {
   margin: 0 0 24px;
   padding-right: 48px;
@@ -623,6 +705,15 @@ table.admin-table td {
   }
 
   .admin-form-actions button {
+    width: 100%;
+  }
+
+  .admin-confirm-actions {
+    flex-direction: column;
+    padding: 16px;
+  }
+
+  .admin-confirm-actions button {
     width: 100%;
   }
 }

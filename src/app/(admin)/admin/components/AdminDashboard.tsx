@@ -283,19 +283,6 @@ function MetricCard({
   value: string;
   hint: string;
 }) {
-  const overviewStatusTotal = overviewStatusData.datasets[0].data.reduce(
-    (sum, value) => sum + Number(value),
-    0,
-  );
-  const serviceLoadTotal = serviceLoadData.datasets[0].data.reduce(
-    (sum, value) => sum + Number(value),
-    0,
-  );
-  const dailyStatusTotal = dailyStatusData.datasets[0].data.reduce(
-    (sum, value) => sum + Number(value),
-    0,
-  );
-
   return (
     <div className={styles.statCard}>
       <div className={styles.metricTop}>

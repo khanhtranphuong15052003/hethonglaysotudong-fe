@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { Ticket } from "@/types/queue";
 import CounterDisplayLayout from "../../components/CounterDisplayLayout";
 import { getWaitingListByCounter, getNowCallingByCounter } from "@/mock/queue";
 import { getCounterById } from "@/mock/counters";
+import type { Ticket } from "@/mock/data";
 
 export default function CounterDisplayPage() {
   const params = useParams();

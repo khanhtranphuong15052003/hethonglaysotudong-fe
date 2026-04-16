@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { CSSProperties, ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { clearAdminSession } from "@/lib/admin-auth";
 import {
   // FiBarChart2,
   FiActivity,
-  FiFileText,
   FiGrid,
   FiLogOut,
   FiPrinter,
@@ -38,6 +38,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const isLoginPage = pathname === "/login" || pathname === "/admin/login";
+  const handleSessionExpired = () => {
+    clearAdminSession();
+    router.replace("/admin/login?reason=session_expired");
+  };
 
   useEffect(() => {
     if (isLoginPage) {
@@ -49,20 +53,24 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     const user = localStorage.getItem("adminUser");
 
     if (!token) {
-      router.push("/login");
+      router.replace("/admin/login");
     } else {
-      if (user) {
-        setAdminUser(JSON.parse(user));
+      try {
+        if (user) {
+          setAdminUser(JSON.parse(user));
+        }
+        setIsLoggedIn(true);
+      } catch {
+        handleSessionExpired();
+        return;
       }
-      setIsLoggedIn(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoginPage]);
 
   const handleLogout = () => {
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("adminUser");
-    router.push("/login");
+    clearAdminSession();
+    router.replace("/admin/login");
   };
 
   const activeIndex = navItems.reduce((matchedIndex, item, index) => {

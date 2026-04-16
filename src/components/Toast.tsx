@@ -71,6 +71,7 @@ export default function Toast({
           minWidth: 300,
           maxWidth: 450,
           borderLeft: `4px solid ${colors.bg}`,
+          fontFamily: "'Segoe UI', Arial, Helvetica, sans-serif",
         }}
       >
         <div
@@ -99,6 +100,7 @@ export default function Toast({
               fontWeight: 500,
               lineHeight: 1.5,
               wordBreak: "break-word",
+              whiteSpace: "pre-wrap",
             }}
           >
             {message}

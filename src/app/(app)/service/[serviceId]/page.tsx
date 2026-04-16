@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { Suspense, useState, useEffect, useRef } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Service, getServices } from "@/mock/services";
 import { createTicket } from "@/services/ticket.service";
 import { Ticket } from "@/mock/data";
@@ -12,12 +12,21 @@ import Toast from "@/components/Toast";
 interface DisplayTicket extends Ticket {
   qrCode?: string;
   serviceCode?: string;
+  displayNumber?: string;
+  formattedNumber?: string;
 }
 
-export default function ServiceTicketPage() {
+const getTicketDisplayNumber = (ticket?: Partial<DisplayTicket> | null) =>
+  ticket?.displayNumber ||
+  ticket?.formattedNumber ||
+  String(ticket?.number ?? "").padStart(3, "0");
+
+function ServiceTicketContent() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const serviceId = params.serviceId as string;
+  const selectedCounterId = searchParams.get("counterId")?.trim() || "";
 
   const [service, setService] = useState<Service | null>(null);
   const [step, setStep] = useState<"form" | "done">("form");
@@ -26,9 +35,7 @@ export default function ServiceTicketPage() {
 
   // Form state
   const [fullName, setFullName] = useState("");
-  const [gender, setGender] = useState("male");
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [formError, setFormError] = useState("");
 
   const [displayedName, setDisplayedName] = useState(fullName);
   const nameContainerRef = useRef<HTMLDivElement>(null);
@@ -79,7 +86,6 @@ export default function ServiceTicketPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFormError("");
 
     if (!fullName.trim()) {
       showToast("Vui lĂ²ng nháº­p há» tĂªn", "error");
@@ -104,13 +110,16 @@ export default function ServiceTicketPage() {
         serviceId,
         name: fullName,
         phone: phoneNumber,
+        counterId: selectedCounterId || undefined,
       });
       if (result.success && result.data) {
         const ticketData = {
           ...result.data,
           serviceName: result.service?.name || result.data.serviceId?.name,
           serviceCode: result.service?.code || result.data.serviceId?.code,
-          number: result.data.ticketNumber || result.data.number,
+          number: result.data.number,
+          displayNumber: result.data.displayNumber || result.data.formattedNumber,
+          formattedNumber: result.data.formattedNumber || result.data.displayNumber,
           qrCode: result.data.qrCode,
         };
         setTicket(ticketData as DisplayTicket);
@@ -161,7 +170,7 @@ export default function ServiceTicketPage() {
   }, [step, fullName]);
 
   const qrData = ticket
-    ? `${service?.code ?? ""}-${String(ticket.number).padStart(3, "0")}|${fullName}|${service?.name ?? ""}`
+    ? `${service?.code ?? ""}-${getTicketDisplayNumber(ticket)}|${fullName}|${service?.name ?? ""}`
     : "";
 
   if (loading) {
@@ -462,7 +471,7 @@ export default function ServiceTicketPage() {
                       lineHeight: 1,
                     }}
                   >
-                    {String(ticket?.number).padStart(3, "0")}
+                    {getTicketDisplayNumber(ticket)}
                   </h2>
                 </div>
 
@@ -572,5 +581,13 @@ export default function ServiceTicketPage() {
         onClose={() => setToast({ ...toast, isOpen: false })}
       />
     </div>
+  );
+}
+
+export default function ServiceTicketPage() {
+  return (
+    <Suspense fallback={null}>
+      <ServiceTicketContent />
+    </Suspense>
   );
 }

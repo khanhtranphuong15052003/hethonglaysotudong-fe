@@ -29,7 +29,9 @@ export default function PrinterTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  const [formData, setFormData] = useState({
+  type PrinterFormData = Omit<Printer, "_id" | "services">;
+
+  const [formData, setFormData] = useState<PrinterFormData>({
     name: "",
     code: "",
     type: "network",

@@ -1,6 +1,6 @@
 "use client";
 
-import { Ticket } from "@/types/queue";
+import type { Ticket } from "@/mock/data";
 
 interface CounterDisplayLayoutProps {
   counterName: string;
