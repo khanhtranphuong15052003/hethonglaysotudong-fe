@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { FiEdit } from "react-icons/fi";
+import { FiEdit, FiRepeat } from "react-icons/fi";
 import { RiDeleteBin6Line } from "react-icons/ri";
 import {
   getStaff,
@@ -472,12 +472,12 @@ export default function StaffTable() {
                     </button>
                     <button
                       className="table-action-btn"
-                      style={{ background: '#e8f0fe', color: '#003366', border: '1px solid #c0d0f0' }}
+                      style={{ background: "transparent", color: "#000", border: "none" }}
                       onClick={() => handleOpenServiceModal(staff)}
                       title="Phân quyền dịch vụ"
                       disabled={!staff.counterId}
                     >
-                      <span style={{ fontSize: 13, fontWeight: 700 }}>DV</span>
+                      <FiRepeat size={16} color="#000" />
                     </button>
                     <button className="table-action-btn table-action-delete" onClick={() => handleDelete(staff._id)} title="Xóa">
                       <RiDeleteBin6Line size={18} />
@@ -578,7 +578,7 @@ export default function StaffTable() {
                 )}
                 {formAvailableServices.length > 0 && formSelectedServiceIds.size === 0 && (
                   <div style={{ marginTop: 8, color: "#dc2626", fontSize: 13 }}>
-                    Không chọn dịch vụ nào nghĩa là nhân viên sẽ không được xử lý phiếu.
+                    Không chọn quầy nào.
                   </div>
                 )}
               </div>
@@ -624,7 +624,7 @@ export default function StaffTable() {
         <div className="admin-modal">
           <div className="admin-modal-content" style={{ maxWidth: 480 }}>
             <button className="admin-modal-close" onClick={() => setShowServiceModal(false)}>✕</button>
-            <h3>Phân quyền dịch vụ — {serviceModalStaff.fullName}</h3>
+            <h3>Phân quyền dịch vụ - {serviceModalStaff.fullName}</h3>
             {!serviceModalStaff.counterId && (
               <p style={{ color: '#856404', background: '#fff3cd', padding: '8px 12px', borderRadius: 6, fontSize: 14 }}>
                 Nhân viên chưa được gán quầy, vui lòng gán quầy trước.
@@ -665,7 +665,7 @@ export default function StaffTable() {
                 )}
                 {selectedServiceIds.size === 0 && availableServices.length > 0 && (
                   <p style={{ color: '#dc3545', fontSize: 13, marginBottom: 10 }}>
-                    ⚠️ Không chọn dịch vụ — nhân viên sẽ không xử lý được phiếu nào.
+                    ⚠️ Không chọn quầy.
                   </p>
                 )}
                 <div className="admin-form-actions">

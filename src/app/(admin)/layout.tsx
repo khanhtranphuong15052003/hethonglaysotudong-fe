@@ -12,6 +12,7 @@ import {
   FiPrinter,
   FiSettings,
   FiUsers,
+  FiTool,
 } from "react-icons/fi";
 import { IconType } from "react-icons";
 
@@ -23,13 +24,19 @@ interface AdminUser {
   counterId: string | null;
 }
 
-const navItems: { href: string; label: string; icon: IconType }[] = [
+type NavItem = {
+  href: string;
+  label: string;
+  icon: IconType;
+};
+
+const navItems: NavItem[] = [
   { href: "/admin", label: "Thống kê", icon: FiActivity },
   { href: "/admin/users", label: "Người dùng", icon: FiUsers },
-  { href: "/admin/services", label: "Dịch vụ", icon: FiSettings },
+  { href: "/admin/services", label: "Dịch vụ", icon: FiTool  },
   { href: "/admin/counter", label: "Quản lý quầy", icon: FiGrid },
   { href: "/admin/printers", label: "Máy in", icon: FiPrinter },
-
+  { href: "/admin/settings", label: "Cài đặt", icon: FiSettings },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

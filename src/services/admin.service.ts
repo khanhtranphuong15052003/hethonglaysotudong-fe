@@ -204,6 +204,103 @@ export async function deleteService(id: string): Promise<void> {
   }
 }
 
+// ==================== SETTINGS ====================
+export interface TtsSettings {
+  enabled: boolean;
+}
+
+const extractTtsEnabled = (payload: unknown): boolean | null => {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const record = payload as Record<string, unknown>;
+
+  if (typeof record.enabled === "boolean") {
+    return record.enabled;
+  }
+
+  if (typeof record.ttsEnabled === "boolean") {
+    return record.ttsEnabled;
+  }
+
+  if (typeof record.tts_enabled === "boolean") {
+    return record.tts_enabled;
+  }
+
+  if (typeof record.isEnabled === "boolean") {
+    return record.isEnabled;
+  }
+
+  if (typeof record.value === "boolean") {
+    return record.value;
+  }
+
+  if (record.data && typeof record.data === "object") {
+    return extractTtsEnabled(record.data);
+  }
+
+  if (record.setting && typeof record.setting === "object") {
+    return extractTtsEnabled(record.setting);
+  }
+
+  if (record.result && typeof record.result === "object") {
+    return extractTtsEnabled(record.result);
+  }
+
+  return null;
+};
+
+export async function getTtsSettings(): Promise<TtsSettings> {
+  const response = await fetch(`${API_BASE}/admin/settings/tts`, {
+    headers: getAuthHeaders(),
+  });
+
+  const data = await parseJsonResponse<{
+    success?: boolean;
+    data?: TtsSettings;
+    enabled?: boolean;
+    message?: string;
+  }>(response);
+
+  const enabled = extractTtsEnabled(data);
+  if (typeof enabled === "boolean") {
+    return { enabled };
+  }
+
+  if (data.success === false) {
+    throw new Error(data.message || "Không lấy được cấu hình voice");
+  }
+
+  throw new Error("Dữ liệu cấu hình voice không hợp lệ");
+}
+
+export async function updateTtsSettings(enabled: boolean): Promise<TtsSettings> {
+  const response = await fetch(`${API_BASE}/admin/settings/tts`, {
+    method: "PATCH",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ enabled }),
+  });
+
+  const data = await parseJsonResponse<{
+    success?: boolean;
+    data?: TtsSettings;
+    enabled?: boolean;
+    message?: string;
+  }>(response);
+
+  const nextEnabled = extractTtsEnabled(data);
+  if (typeof nextEnabled === "boolean") {
+    return { enabled: nextEnabled };
+  }
+
+  if (data.success === false) {
+    throw new Error(data.message || "Cap nhat cau hinh voice that bai");
+  }
+
+  return { enabled };
+}
+
 // ==================== PRINTERS ====================
 export interface Printer {
   _id: string;
