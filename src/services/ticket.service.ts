@@ -22,7 +22,7 @@ const isAuthExpiredMessage = (message?: string) => {
 // Helper to get token
 const getToken = () => {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem("staffToken");
+  return sessionStorage.getItem("staffToken");
 };
 
 export const getStaffDisplay = async () => {
@@ -46,18 +46,21 @@ export const getStaffDisplay = async () => {
   return data;
 };
 
-export const callNextTicket = async (counterId: string) => {
+export const callTicketById = async (ticketId: string, counterId: string) => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/tickets/call-next`, {
+  const payload = { ticketId, counterId };
+  console.log("[callTicketById] payload gửi lên:", JSON.stringify(payload));
+  const response = await fetch(`${API_URL}/tickets/call-by-id`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ counterId }),
+    body: JSON.stringify(payload),
   });
   const data = await response.json();
   if (!response.ok || (data && data.success === false)) {
+    console.error("[callTicketById] 400 response body:", data);
     if (response.status === 401 || isAuthExpiredMessage(data?.message)) {
       throw new Error(AUTH_EXPIRED_ERROR);
     }
@@ -102,6 +105,83 @@ export const skipTicketApi = async (ticketId: string) => {
   return data;
 };
 
+export const callNextTicket = async (counterId: string) => {
+  const token = getToken();
+  const response = await fetch(`${API_URL}/tickets/call-next`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ counterId }),
+  });
+  const data = await response.json();
+  if (!response.ok || data?.success === false) {
+    if (response.status === 401 || isAuthExpiredMessage(data?.message)) {
+      throw new Error(AUTH_EXPIRED_ERROR);
+    }
+    throw new Error(data?.message || "Không thể gọi số tiếp theo");
+  }
+  return data;
+};
+
+export const recallTicket = async (ticketId: string) => {
+  const token = getToken();
+  const response = await fetch(`${API_URL}/tickets/${ticketId}/recall`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({}),
+  });
+  const data = await response.json();
+  if (!response.ok || data?.success === false) {
+    if (response.status === 401 || isAuthExpiredMessage(data?.message)) {
+      throw new Error(AUTH_EXPIRED_ERROR);
+    }
+    throw new Error(data?.message || "Không thể gọi lại vé");
+  }
+  return data;
+};
+
+export const recallProcessingTicketApi = async (ticketId: string) => {
+  const token = getToken();
+  const response = await fetch(`${API_URL}/tickets/${ticketId}/recall-processing`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({}),
+  });
+  const data = await response.json();
+  if (!response.ok || data?.success === false) {
+    if (response.status === 401 || isAuthExpiredMessage(data?.message)) {
+      throw new Error(AUTH_EXPIRED_ERROR);
+    }
+    throw new Error(data?.message || "Không thể gọi lại vé đang xử lý");
+  }
+  return data;
+};
+
+export const getRecallList = async () => {
+  const token = getToken();
+  const response = await fetch(`${API_URL}/tickets/recall-list`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  const data = await response.json();
+  if (!response.ok || data?.success === false) {
+    if (response.status === 401 || isAuthExpiredMessage(data?.message)) {
+      throw new Error(AUTH_EXPIRED_ERROR);
+    }
+    throw new Error(data?.message || "Không thể tải danh sách bỏ qua");
+  }
+  return data;
+};
+
 export { AUTH_EXPIRED_ERROR };
 
 export const createTicket = async (data: {
@@ -109,6 +189,7 @@ export const createTicket = async (data: {
   phone: string;
   serviceId: string;
   counterId?: string;
+  autoPrint?: boolean;
 }) => {
   const response = await fetch(`${API_URL}/tickets`, {
     method: "POST",

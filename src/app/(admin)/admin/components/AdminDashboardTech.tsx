@@ -301,7 +301,7 @@ function ServiceTable({ services }: { services: DashboardReportService[] }) {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>Dịch vụ</th>
+              <th>Yêu cầu</th>
               <th>Phát hành</th>
               <th>Hoàn tất</th>
               <th>Đang chờ</th>

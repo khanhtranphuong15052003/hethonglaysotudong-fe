@@ -7,11 +7,11 @@ export default function StaffPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem("staffToken");
+    const token = sessionStorage.getItem("staffToken");
     if (token) {
       // Nếu đã login, chuyển về trang dashboard (tự động tìm counterId)
-      // Bạn có thể lưu counterId trong token hoặc localStorage
-      const staffData = localStorage.getItem("staffToken");
+      // Bạn có thể lưu counterId trong token hoặc sessionStorage
+      const staffData = sessionStorage.getItem("staffToken");
       if (staffData) {
         const [, counterId] = staffData.split(":");
         if (counterId) {

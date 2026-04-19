@@ -1,4 +1,10 @@
-export type TicketStatus = "waiting" | "calling" | "processing" | "done";
+export type TicketStatus =
+  | "waiting"
+  | "calling"
+  | "processing"
+  | "completed"
+  | "skipped"
+  | "done";
 
 export interface Ticket {
   id: string;
@@ -7,7 +13,7 @@ export interface Ticket {
   displayNumber?: string;
   customerName: string;
   phone: string;
-  status: "waiting" | "processing" | "completed" | "skipped";
+  status: TicketStatus;
   serviceName: string;
   createdAt: string;
   name: string; // for speakName compatibility

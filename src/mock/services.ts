@@ -4,6 +4,7 @@ export interface Service {
   code: string;
   description: string;
   displayOrder: number;
+  prefixNumber: number;
   counterId: string;
   counterName: string;
   icon?: string;
@@ -16,6 +17,7 @@ export const services: Service[] = [
     code: "A",
     description: "Tiếp nhận hồ sơ nộp đơn",
     displayOrder: 1,
+    prefixNumber: 0,
     counterId: "counter-1",
     counterName: "Quầy 1",
     icon: "FiEdit3",
@@ -26,6 +28,7 @@ export const services: Service[] = [
     code: "B",
     description: "Nhận kết quả giải quyết hồ sơ",
     displayOrder: 2,
+    prefixNumber: 0,
     counterId: "counter-2",
     counterName: "Quầy 2",
     icon: "FiClipboard",
@@ -36,6 +39,7 @@ export const services: Service[] = [
     code: "C",
     description: "Tư vấn pháp luật",
     displayOrder: 3,
+    prefixNumber: 0,
     counterId: "counter-1",
     counterName: "Quầy 1",
     icon: "FiMessageCircle",
@@ -46,6 +50,7 @@ export const services: Service[] = [
     code: "D",
     description: "Tiếp nhận khiếu nại",
     displayOrder: 4,
+    prefixNumber: 0,
     counterId: "counter-3",
     counterName: "Quầy 3",
     icon: "FiAlertCircle",
@@ -56,6 +61,7 @@ export const services: Service[] = [
     code: "E",
     description: "Thủ tục hành chính",
     displayOrder: 5,
+    prefixNumber: 0,
     counterId: "counter-4",
     counterName: "Quầy 4",
     icon: "FiCheckCircle",
@@ -66,6 +72,7 @@ export const services: Service[] = [
     code: "F",
     description: "Các dịch vụ khác",
     displayOrder: 6,
+    prefixNumber: 0,
     counterId: "counter-2",
     counterName: "Quầy 2",
     icon: "FiMoreHorizontal",

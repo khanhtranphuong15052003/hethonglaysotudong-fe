@@ -31,6 +31,18 @@ function getSocketBaseUrl() {
 
 const SOCKET_BASE_URL = getSocketBaseUrl();
 
+export interface StaffDisplayTicket {
+  id: string;
+  number: number;
+  formattedNumber: string;
+  displayNumber?: string;
+  customerName: string;
+  phone: string;
+  status: "waiting" | "processing" | "completed" | "skipped" | "done";
+  serviceName: string;
+  createdAt: string;
+}
+
 export interface StaffDisplaySnapshot {
   counter: {
     id: string;
@@ -39,35 +51,23 @@ export interface StaffDisplaySnapshot {
     isActive: boolean;
     processedCount: number;
   };
-  services: Array<{ id: string; name: string; code: string }>;
-  currentTicket: {
-    id: string;
-    number: number;
-    formattedNumber: string;
-    displayNumber?: string;
-    customerName: string;
-    phone: string;
-    status: "waiting" | "processing" | "completed" | "skipped" | "done";
-    serviceName: string;
-    createdAt: string;
-  } | null;
-  waitingTickets: Array<{
-    id: string;
-    number: number;
-    formattedNumber: string;
-    displayNumber?: string;
-    customerName: string;
-    phone: string;
-    status: "waiting" | "processing" | "completed" | "skipped" | "done";
-    serviceName: string;
-    createdAt: string;
-  }>;
+  services: Array<{ id: string; _id?: string; name: string; code: string; icon?: string; displayOrder?: number; isActive?: boolean }>;
+  availableServices?: Array<{ id: string; _id?: string; name: string; code: string; icon?: string; displayOrder?: number; isActive?: boolean }>;
+  assignedServices?: Array<{ id: string; _id?: string; name: string; code: string; icon?: string; displayOrder?: number; isActive?: boolean }>;
+  serviceRestrictionConfigured?: boolean;
+  currentTicket: StaffDisplayTicket | null;
+  processingTickets?: StaffDisplayTicket[];
+  waitingTickets: StaffDisplayTicket[];
+  recallTickets?: StaffDisplayTicket[];
   totalWaiting: number;
+  staffName?: string;
+  staffId?: string;
 }
 
 export interface StaffDisplayUpdatedPayload {
   reason: string;
   counterId: string;
+  staffId?: string;
   updatedAt?: string;
   ticketId?: string;
   serviceId?: string;
@@ -89,12 +89,16 @@ export function createStaffSocket() {
   });
 }
 
-export function joinStaffDisplayRoom(socket: Socket, counterId: string) {
-  socket.emit("join-staff-display", { counterId });
+export function joinStaffDisplayRoom(socket: Socket, counterId: string, staffId?: string) {
+  if (staffId) {
+    socket.emit("join-staff-display", { counterId, staffId });
+  } else {
+    socket.emit("join-staff-display", { counterId });
+  }
 }
 
-export function joinCounterRoom(socket: Socket, counterId: string) {
-  joinStaffDisplayRoom(socket, counterId);
+export function joinCounterRoom(socket: Socket, counterId: string, staffId?: string) {
+  joinStaffDisplayRoom(socket, counterId, staffId);
   socket.emit("join-counter", counterId);
 }
 

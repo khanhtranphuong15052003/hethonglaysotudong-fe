@@ -30,6 +30,8 @@ const getIconComponent = (iconName: string) => {
 };
 
 export default function ServiceTable() {
+  const PREFIX_NUMBER_MIN = 0;
+  const PREFIX_NUMBER_MAX = 99;
   const { toasts, removeToast, success, error } = useToast();
   const [services, setServices] = useState<Service[]>([]);
   const [counters, setCounters] = useState<Counter[]>([]);
@@ -52,14 +54,28 @@ export default function ServiceTable() {
   >(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [prefixNumberError, setPrefixNumberError] = useState("");
   const [formData, setFormData] = useState({
     code: "",
     name: "",
     icon: "",
     description: "",
     displayOrder: 1,
+    prefixNumber: 0,
     isActive: true,
   });
+
+  const validatePrefixNumber = (value: number) => {
+    if (!Number.isInteger(value)) {
+      return "Số tiền tố phải là số nguyên.";
+    }
+
+    if (value < PREFIX_NUMBER_MIN || value > PREFIX_NUMBER_MAX) {
+      return `Số tiền tố phải nằm trong khoảng từ ${PREFIX_NUMBER_MIN} đến ${PREFIX_NUMBER_MAX}.`;
+    }
+
+    return "";
+  };
 
   const fetchServices = useCallback(async () => {
     setLoading(true);
@@ -88,8 +104,10 @@ export default function ServiceTable() {
         icon: service.icon,
         description: service.description,
         displayOrder: service.displayOrder,
+        prefixNumber: service.prefixNumber ?? 0,
         isActive: service.isActive,
       });
+      setPrefixNumberError("");
       const counterIds = service.counters?.map((counter) => counter._id) || [];
       setSelectedCounters(counterIds);
       setInitialCounters(counterIds);
@@ -101,8 +119,10 @@ export default function ServiceTable() {
         icon: "",
         description: "",
         displayOrder: 1,
+        prefixNumber: 0,
         isActive: true,
       });
+      setPrefixNumberError("");
       setSelectedCounters([]);
       setInitialCounters([]);
     }
@@ -118,8 +138,10 @@ export default function ServiceTable() {
       icon: "",
       description: "",
       displayOrder: 1,
+      prefixNumber: 0,
       isActive: true,
     });
+    setPrefixNumberError("");
     setSelectedCounters([]);
     setInitialCounters([]);
   };
@@ -150,6 +172,15 @@ export default function ServiceTable() {
     setShowDeleteConfirm(true);
   };
 
+  const handlePrefixNumberChange = (value: string) => {
+    const nextValue = Number(value);
+    setFormData((prev) => ({
+      ...prev,
+      prefixNumber: nextValue,
+    }));
+    setPrefixNumberError(validatePrefixNumber(nextValue));
+  };
+
   const handleConfirmDelete = async () => {
     if (pendingDeleteId) {
       try {
@@ -172,9 +203,21 @@ export default function ServiceTable() {
       return;
     }
 
+    const normalizedPrefixNumber = Number(formData.prefixNumber);
+    const prefixValidationMessage = validatePrefixNumber(normalizedPrefixNumber);
+    if (prefixValidationMessage) {
+      setPrefixNumberError(prefixValidationMessage);
+      error(prefixValidationMessage);
+      return;
+    }
+    setPrefixNumberError("");
+
     try {
       if (editingId) {
-        await updateService(editingId, formData);
+        await updateService(editingId, {
+          ...formData,
+          prefixNumber: normalizedPrefixNumber,
+        });
 
         const removedCounterIds = initialCounters.filter(
           (counterId) => !selectedCounters.includes(counterId),
@@ -209,6 +252,7 @@ export default function ServiceTable() {
           icon: formData.icon,
           description: formData.description,
           displayOrder: formData.displayOrder,
+          prefixNumber: normalizedPrefixNumber,
           isActive: formData.isActive,
         });
 
@@ -334,6 +378,7 @@ export default function ServiceTable() {
             <tr>
               <th>Thứ tự</th>
               <th>Mã dịch vụ</th>
+              <th>Mã tiền tố</th>
               <th>Tên dịch vụ</th>
               <th>Quầy dịch vụ</th>
               <th>Trạng thái</th>
@@ -344,7 +389,7 @@ export default function ServiceTable() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={7} className="admin-table-loading">
+                <td colSpan={8} className="admin-table-loading">
                   Đang tải...
                 </td>
               </tr>
@@ -353,6 +398,7 @@ export default function ServiceTable() {
                 <tr key={service._id}>
                   <td>{service.displayOrder}</td>
                   <td>{service.code}</td>
+                  <td>{service.prefixNumber ?? 0}</td>
                   <td>
                     <span style={{ display: "flex", alignItems: "center" }}>
                       {service.icon &&
@@ -417,7 +463,7 @@ export default function ServiceTable() {
               ))
             ) : (
               <tr>
-                <td colSpan={7} className="admin-table-empty">
+                <td colSpan={8} className="admin-table-empty">
                   Không có dịch vụ nào.
                 </td>
               </tr>
@@ -486,6 +532,29 @@ export default function ServiceTable() {
                       })
                     }
                   />
+                </div>
+
+                <div className="admin-form-group">
+                  <label className="admin-form-label">Mã tiền tố:</label>
+                  <input
+                    type="number"
+                    min={PREFIX_NUMBER_MIN}
+                    max={PREFIX_NUMBER_MAX}
+                    className="admin-form-input"
+                    value={formData.prefixNumber}
+                    onChange={(e) => handlePrefixNumberChange(e.target.value)}
+                  />
+                  {prefixNumberError ? (
+                    <div
+                      style={{
+                        marginTop: "6px",
+                        fontSize: "12px",
+                        color: "#dc3545",
+                      }}
+                    >
+                      {prefixNumberError}
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="admin-form-group">

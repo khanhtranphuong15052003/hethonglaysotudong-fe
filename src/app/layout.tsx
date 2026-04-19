@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Script from "next/script";
 import "@/styles/globals.css";
 import { ReactNode } from "react";
 
@@ -17,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Hệ thống lấy vé tự động",
   description: "Ứng dụng quản lý xếp hàng cho các cơ quan, tổ chức",
+  icons: {
+    icon: "/assets/logotoaan.png",
+  },
 };
 
 export default function RootLayout({
@@ -47,11 +49,6 @@ export default function RootLayout({
           flexDirection: "column",
         }}
       >
-        <Script
-          id="responsive-voice"
-          src="https://code.responsivevoice.org/responsivevoice.js?key=tlcgLjnb"
-          strategy="afterInteractive"
-        />
         {children}
       </body>
     </html>

@@ -61,10 +61,10 @@ function StaffLoginContent() {
       if (response.success && response.data) {
         const { token, user } = response.data;
 
-        // Lưu vào localStorage
+        // Lưu vào sessionStorage (mỗi tab riêng biệt)
         if (typeof window !== "undefined") {
-          localStorage.setItem("staffToken", token);
-          localStorage.setItem("staffUser", JSON.stringify(user));
+          sessionStorage.setItem("staffToken", token);
+          sessionStorage.setItem("staffUser", JSON.stringify(user));
         }
 
         setToast({

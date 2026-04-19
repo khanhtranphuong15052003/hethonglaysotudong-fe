@@ -15,7 +15,7 @@ export function StaffAuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const token = localStorage.getItem("staffToken");
+      const token = sessionStorage.getItem("staffToken");
       if (!token) {
         router.push("/staff/login");
         setIsLoading(false);
@@ -24,8 +24,8 @@ export function StaffAuthProvider({ children }: { children: ReactNode }) {
 
       const staff = getStaffFromToken(token);
       if (!staff) {
-        localStorage.removeItem("staffToken");
-        localStorage.removeItem("staffName");
+        sessionStorage.removeItem("staffToken");
+        sessionStorage.removeItem("staffName");
         router.push("/staff/login");
         setIsLoading(false);
         return;
@@ -52,11 +52,11 @@ export function StaffAuthProvider({ children }: { children: ReactNode }) {
 export function StaffLogoutButton() {
   const router = useRouter();
   const staffName =
-    typeof window !== "undefined" ? localStorage.getItem("staffName") : "";
+    typeof window !== "undefined" ? sessionStorage.getItem("staffName") : "";
 
   const handleLogout = () => {
-    localStorage.removeItem("staffToken");
-    localStorage.removeItem("staffName");
+    sessionStorage.removeItem("staffToken");
+    sessionStorage.removeItem("staffName");
     router.push("/staff/login");
   };
 

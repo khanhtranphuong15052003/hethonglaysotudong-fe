@@ -10,8 +10,10 @@ import {
   deleteStaff,
   assignCounterToStaff,
   getCounters,
+  updateStaffServices,
   Staff,
   Counter,
+  StaffServiceInfo,
 } from "@/services/admin.service";
 import { useToast } from "@/hooks/useToast";
 import { useAdminSessionGuard } from "@/hooks/useAdminSessionGuard";
@@ -33,6 +35,17 @@ export default function StaffTable() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+  // Service assignment modal state
+  const [showServiceModal, setShowServiceModal] = useState(false);
+  const [serviceModalStaff, setServiceModalStaff] = useState<Staff | null>(null);
+  const [availableServices, setAvailableServices] = useState<StaffServiceInfo[]>([]);
+  const [selectedServiceIds, setSelectedServiceIds] = useState<Set<string>>(new Set());
+  const [serviceModalLoading, setServiceModalLoading] = useState(false);
+  const [serviceModalSaving, setServiceModalSaving] = useState(false);
+  const [serviceRestrictionConfigured, setServiceRestrictionConfigured] = useState(false);
+  const [formAvailableServices, setFormAvailableServices] = useState<StaffServiceInfo[]>([]);
+  const [formSelectedServiceIds, setFormSelectedServiceIds] = useState<Set<string>>(new Set());
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -82,14 +95,31 @@ export default function StaffTable() {
 
   const handleOpenModal = (staff?: Staff) => {
     if (staff) {
+      const counterServices =
+        counters.find((counter) => counter._id === (staff.counterId?._id || ""))?.services || [];
+      const normalizedAvailableServices: StaffServiceInfo[] = counterServices.map((service) => ({
+        id: service._id,
+        _id: service._id,
+        code: service.code,
+        name: service.name,
+        icon: service.icon,
+        displayOrder: service.displayOrder,
+      }));
+      const initialSelectedServiceIds =
+        staff.serviceRestrictionConfigured && staff.assignedServices
+          ? new Set(staff.assignedServices.map((service) => service.id || service._id))
+          : new Set(normalizedAvailableServices.map((service) => service.id || service._id));
+
       setEditingId(staff._id);
       setFormData({
         username: staff.username,
-        password: "", // Don't pre-fill password
+        password: "",
         fullName: staff.fullName,
         counterId: staff.counterId?._id || null,
         isActive: staff.isActive,
       });
+      setFormAvailableServices(normalizedAvailableServices);
+      setFormSelectedServiceIds(initialSelectedServiceIds);
     } else {
       setEditingId(null);
       setFormData({
@@ -99,6 +129,8 @@ export default function StaffTable() {
         counterId: null,
         isActive: true,
       });
+      setFormAvailableServices([]);
+      setFormSelectedServiceIds(new Set());
     }
     setShowModal(true);
   };
@@ -106,6 +138,8 @@ export default function StaffTable() {
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingId(null);
+    setFormAvailableServices([]);
+    setFormSelectedServiceIds(new Set());
   };
 
   const handleDelete = (staffId: string) => {
@@ -139,9 +173,14 @@ export default function StaffTable() {
       return;
     }
 
+    let savedStaff: Staff | undefined;
+    const previousCounterId = editingId
+      ? (staffList.find((s) => s._id === editingId)?.counterId?._id ?? null)
+      : null;
+
     try {
-      let savedStaff;
       if (editingId) {
+        // === EDIT MODE: update info + counter + services ===
         const payload: {
           fullName: string;
           isActive: boolean;
@@ -154,26 +193,130 @@ export default function StaffTable() {
           payload.password = formData.password;
         }
         savedStaff = await updateStaff(editingId, payload);
-        if (formData.counterId !== (staffList.find(s => s._id === editingId)?.counterId?._id || null)) {
-            await assignCounterToStaff(editingId, formData.counterId);
+        if (formData.counterId !== previousCounterId) {
+          savedStaff = await assignCounterToStaff(editingId, formData.counterId);
         }
+        // Gán dịch vụ chỉ trong edit mode (staff đã có quầy trong DB)
+        if (formData.counterId) {
+          try {
+            await updateStaffServices(savedStaff._id, Array.from(formSelectedServiceIds));
+          } catch (svcErr) {
+            const svcMsg = svcErr instanceof Error ? svcErr.message : "";
+            console.warn("Gán dịch vụ thất bại:", svcMsg);
+          }
+        }
+        success("Cập nhật thành công");
       } else {
+        // === CREATE MODE: chỉ tạo staff + gán quầy, KHÔNG gán dịch vụ ===
+        // (BE yêu cầu staff phải được lưu với quầy trong DB trước, sau đó vào Edit mới gán dịch vụ)
         savedStaff = await createStaff({
           username: formData.username,
           password: formData.password,
           fullName: formData.fullName,
         });
         if (formData.counterId) {
-            await assignCounterToStaff(savedStaff._id, formData.counterId);
+          savedStaff = await assignCounterToStaff(savedStaff._id, formData.counterId);
         }
+        success("Tạo nhân viên thành công" + (formData.counterId ? ". Vào Sửa để gán dịch vụ cho nhân viên." : ""));
       }
-      success(editingId ? "Cập nhật thành công" : "Tạo nhân viên thành công");
-      fetchStaff();
-      handleCloseModal();
     } catch (err) {
+      await fetchStaff();
       const errorMessage =
         err instanceof Error ? err.message : "Lưu thông tin thất bại";
       error(errorMessage);
+      return;
+    }
+
+    handleCloseModal();
+    await fetchStaff();
+  };
+
+  const handleOpenServiceModal = async (staff: Staff) => {
+    setServiceModalStaff(staff);
+    setShowServiceModal(true);
+    setServiceModalLoading(true);
+    try {
+      const counterServices =
+        counters.find((counter) => counter._id === (staff.counterId?._id || ""))?.services || [];
+      const normalizedAvailableServices: StaffServiceInfo[] = counterServices.map((service) => ({
+        id: service._id,
+        _id: service._id,
+        code: service.code,
+        name: service.name,
+        icon: service.icon,
+        displayOrder: service.displayOrder,
+      }));
+      const initialSelectedServiceIds =
+        staff.serviceRestrictionConfigured && staff.assignedServices
+          ? new Set(staff.assignedServices.map((service) => service.id || service._id))
+          : new Set(normalizedAvailableServices.map((service) => service.id || service._id));
+      setAvailableServices(normalizedAvailableServices);
+      setSelectedServiceIds(initialSelectedServiceIds);
+      setServiceRestrictionConfigured(Boolean(staff.serviceRestrictionConfigured));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Lỗi tải dịch vụ";
+      error(msg);
+      setShowServiceModal(false);
+    } finally {
+      setServiceModalLoading(false);
+    }
+  };
+
+  const handleToggleService = (serviceId: string) => {
+    setSelectedServiceIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(serviceId)) next.delete(serviceId);
+      else next.add(serviceId);
+      return next;
+    });
+  };
+
+  const handleFormCounterChange = (counterId: string | null) => {
+    const counterServices =
+      counters.find((counter) => counter._id === (counterId || ""))?.services || [];
+    const normalizedAvailableServices: StaffServiceInfo[] = counterServices.map((service) => ({
+      id: service._id,
+      _id: service._id,
+      code: service.code,
+      name: service.name,
+      icon: service.icon,
+      displayOrder: service.displayOrder,
+    }));
+
+    setFormData((prev) => ({ ...prev, counterId }));
+    setFormAvailableServices(normalizedAvailableServices);
+    setFormSelectedServiceIds(
+      new Set(normalizedAvailableServices.map((service) => service.id || service._id)),
+    );
+  };
+
+  const handleToggleFormService = (serviceId: string) => {
+    setFormSelectedServiceIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(serviceId)) next.delete(serviceId);
+      else next.add(serviceId);
+      return next;
+    });
+  };
+
+  const handleSaveServices = async () => {
+    if (!serviceModalStaff) return;
+    setServiceModalSaving(true);
+    try {
+      await updateStaffServices(serviceModalStaff._id, Array.from(selectedServiceIds));
+      success("Cập nhật dịch vụ thành công");
+      setShowServiceModal(false);
+      fetchStaff();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Lỗi lưu dịch vụ";
+      const is404 = msg.includes("404") || msg.toLowerCase().includes("not found");
+      if (is404) {
+        error("API gán dịch vụ trả 404 — route chưa được deploy trên server. Vui lòng kiểm tra backend.");
+      } else {
+        error(msg);
+      }
+    } finally {
+      setServiceModalSaving(false);
     }
   };
 
@@ -192,6 +335,19 @@ export default function StaffTable() {
 
     return matchesSearch && matchesCounter && matchesStatus;
   });
+
+  const getCounterDisplay = (staff: Staff) => {
+    if (!staff.counterId) {
+      return null;
+    }
+
+    const matchedCounter = counters.find(
+      (counter) => counter._id === staff.counterId?._id,
+    );
+    const counterCode = staff.counterId.code || matchedCounter?.code || "";
+
+    return `${staff.counterId.name}${counterCode ? ` (${counterCode})` : ""}`;
+  };
 
   const totalPages = Math.ceil(filteredStaff.length / itemsPerPage);
   const currentItems = filteredStaff.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -271,6 +427,7 @@ export default function StaffTable() {
               <th>Tên đăng nhập</th>
               <th>Họ và tên</th>
               <th>Quầy trực</th>
+              <th>Dịch vụ được phép</th>
               <th>Trạng thái</th>
               <th>Đăng nhập lần cuối</th>
               <th>Hành động</th>
@@ -281,7 +438,27 @@ export default function StaffTable() {
               <tr key={staff._id}>
                 <td><strong>{staff.username}</strong></td>
                 <td>{staff.fullName}</td>
-                <td>{staff.counterId ? `${staff.counterId.name} (${staff.counterId.code})` : <span style={{color: '#999'}}>Chưa gán</span>}</td>
+                <td>{staff.counterId ? getCounterDisplay(staff) : <span style={{color: '#999'}}>Chưa gán</span>}</td>
+                <td>
+                  {staff.serviceRestrictionConfigured === false ? (
+                    <span style={{ color: '#666', fontStyle: 'italic', fontSize: '0.9em' }}>Tất cả (mặc định)</span>
+                  ) : staff.effectiveServices && staff.effectiveServices.length > 0 ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {staff.effectiveServices.slice(0, 2).map((s) => (
+                        <span key={s.id || s._id} style={{ background: '#e8f0fe', color: '#003366', borderRadius: 4, padding: '2px 7px', fontSize: '0.82em', fontWeight: 600 }}>
+                          {s.name}
+                        </span>
+                      ))}
+                      {staff.effectiveServices.length > 2 && (
+                        <span style={{ color: '#888', fontSize: '0.82em' }}>+{staff.effectiveServices.length - 2}</span>
+                      )}
+                    </div>
+                  ) : staff.serviceRestrictionConfigured ? (
+                    <span style={{ color: '#dc3545', fontSize: '0.9em' }}>Không có dịch vụ</span>
+                  ) : (
+                    <span style={{ color: '#999', fontStyle: 'italic', fontSize: '0.9em' }}>Chưa cấu hình</span>
+                  )}
+                </td>
                 <td>
                   <span className={`table-cell-status ${staff.isActive ? "status-true" : "status-false"}`}>
                     {staff.isActive ? "Hoạt động" : "Vô hiệu"}
@@ -292,6 +469,15 @@ export default function StaffTable() {
                   <div className="table-actions">
                     <button className="table-action-btn table-action-edit" onClick={() => handleOpenModal(staff)} title="Sửa">
                       <FiEdit size={18} />
+                    </button>
+                    <button
+                      className="table-action-btn"
+                      style={{ background: '#e8f0fe', color: '#003366', border: '1px solid #c0d0f0' }}
+                      onClick={() => handleOpenServiceModal(staff)}
+                      title="Phân quyền dịch vụ"
+                      disabled={!staff.counterId}
+                    >
+                      <span style={{ fontSize: 13, fontWeight: 700 }}>DV</span>
                     </button>
                     <button className="table-action-btn table-action-delete" onClick={() => handleDelete(staff._id)} title="Xóa">
                       <RiDeleteBin6Line size={18} />
@@ -319,7 +505,7 @@ export default function StaffTable() {
       {showModal && (
         <div className="admin-modal">
           <div className="admin-modal-content">
-            <button className="admin-modal-close" onClick={handleCloseModal}>×</button>
+            <button className="admin-modal-close" onClick={handleCloseModal}>✕</button>
             <h3>{editingId ? "Chỉnh Sửa Nhân Viên" : "Thêm Nhân Viên Mới"}</h3>
 
             <div className="admin-form-group">
@@ -328,7 +514,7 @@ export default function StaffTable() {
             </div>
             <div className="admin-form-group">
               <label className="admin-form-label">Mật khẩu:</label>
-              <input type="password" className="admin-form-input" placeholder={editingId ? "Để trống nếu không đổi" : ""} value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
+              <input type="password" className="admin-form-input" placeholder={editingId ? "Để trống nếu không đổi mật khẩu" : ""} value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
             </div>
             <div className="admin-form-group">
               <label className="admin-form-label">Họ và tên:</label>
@@ -336,16 +522,78 @@ export default function StaffTable() {
             </div>
             <div className="admin-form-group">
               <label className="admin-form-label">Gán quầy:</label>
-              <select className="admin-form-input" value={formData.counterId || ""} onChange={(e) => setFormData({ ...formData, counterId: e.target.value || null })}>
+              <select className="admin-form-input" value={formData.counterId || ""} onChange={(e) => handleFormCounterChange(e.target.value || null)}>
                 <option value="">Không gán</option>
                 {counters.map(c => <option key={c._id} value={c._id}>{c.name} ({c.code})</option>)}
               </select>
+              <div style={{ marginTop: 8, fontSize: 13, color: "#6b7280" }}>
+                Sau khi lưu gán quầy, hệ thống sẽ chuyển sang bước gán dịch vụ cho nhân viên.
+              </div>
             </div>
-             <div className="admin-form-group">
-                <label>
-                    <input type="checkbox" checked={formData.isActive} onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}/>
-                    Kích hoạt tài khoản
-                </label>
+            {/* Gán dịch vụ chỉ hiển thị trong Edit mode */}
+            {formData.counterId && editingId && (
+              <div className="admin-form-group">
+                <label className="admin-form-label">Dịch vụ được phép</label>
+                {formAvailableServices.length === 0 ? (
+                  <div style={{ color: "#999", fontStyle: "italic", fontSize: 14 }}>
+                    Quầy này chưa có dịch vụ nào.
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {formAvailableServices.map((service) => {
+                      const id = service.id || service._id;
+                      const checked = formSelectedServiceIds.has(id);
+                      return (
+                        <label
+                          key={id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            cursor: "pointer",
+                            padding: "10px 12px",
+                            borderRadius: 8,
+                            background: checked ? "#e8f0fe" : "#f9fafb",
+                            border: `1px solid ${checked ? "#4a7fd4" : "#d1d5db"}`,
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => handleToggleFormService(id)}
+                            style={{ width: 16, height: 16 }}
+                          />
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: 14, color: "#003366" }}>
+                              {service.name}
+                            </div>
+                            <div style={{ fontSize: 12, color: "#6b7280" }}>
+                              {service.code}
+                            </div>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+                {formAvailableServices.length > 0 && formSelectedServiceIds.size === 0 && (
+                  <div style={{ marginTop: 8, color: "#dc2626", fontSize: 13 }}>
+                    Không chọn dịch vụ nào nghĩa là nhân viên sẽ không được xử lý phiếu.
+                  </div>
+                )}
+              </div>
+            )}
+            {/* Trong Create mode: hiện note hướng dẫn */}
+            {formData.counterId && !editingId && (
+              <div style={{ marginTop: 4, padding: "10px 14px", background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 8, fontSize: 13, color: "#92400e" }}>
+                💡 Sau khi tạo xong, vào <strong>Sửa</strong> để gán dịch vụ cho nhân viên này.
+              </div>
+            )}
+            <div className="admin-form-group">
+              <label>
+                <input type="checkbox" checked={formData.isActive} onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })} />
+                {" "}Kích hoạt tài khoản
+              </label>
             </div>
 
             <div className="admin-form-actions">
@@ -370,6 +618,67 @@ export default function StaffTable() {
       )}
 
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
+
+      {/* Service Assignment Modal */}
+      {showServiceModal && serviceModalStaff && (
+        <div className="admin-modal">
+          <div className="admin-modal-content" style={{ maxWidth: 480 }}>
+            <button className="admin-modal-close" onClick={() => setShowServiceModal(false)}>✕</button>
+            <h3>Phân quyền dịch vụ — {serviceModalStaff.fullName}</h3>
+            {!serviceModalStaff.counterId && (
+              <p style={{ color: '#856404', background: '#fff3cd', padding: '8px 12px', borderRadius: 6, fontSize: 14 }}>
+                Nhân viên chưa được gán quầy, vui lòng gán quầy trước.
+              </p>
+            )}
+            {serviceModalLoading ? (
+              <p style={{ color: '#666', textAlign: 'center', padding: 20 }}>Đang tải dịch vụ...</p>
+            ) : (
+              <>
+                <p style={{ fontSize: 13, color: '#555', marginBottom: 12 }}>
+                  {serviceRestrictionConfigured
+                    ? 'Nhân viên đang áp dụng giới hạn dịch vụ riêng.'
+                    : 'Chưa cấu hình — nhân viên đang xử lý tất cả dịch vụ của quầy.'}
+                </p>
+                {availableServices.length === 0 ? (
+                  <p style={{ color: '#999', fontStyle: 'italic' }}>Quầy không có dịch vụ nào.</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+                    {availableServices.map((svc) => {
+                      const id = svc.id || svc._id;
+                      const checked = selectedServiceIds.has(id);
+                      return (
+                        <label key={id} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '8px 12px', borderRadius: 6, background: checked ? '#e8f0fe' : '#f9f9f9', border: `1px solid ${checked ? '#4a7fd4' : '#ddd'}` }}>
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => handleToggleService(id)}
+                            style={{ width: 16, height: 16 }}
+                          />
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: 14, color: '#003366' }}>{svc.name}</div>
+                            <div style={{ fontSize: 12, color: '#888' }}>{svc.code}</div>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+                {selectedServiceIds.size === 0 && availableServices.length > 0 && (
+                  <p style={{ color: '#dc3545', fontSize: 13, marginBottom: 10 }}>
+                    ⚠️ Không chọn dịch vụ — nhân viên sẽ không xử lý được phiếu nào.
+                  </p>
+                )}
+                <div className="admin-form-actions">
+                  <button className="submit" onClick={handleSaveServices} disabled={serviceModalSaving}>
+                    {serviceModalSaving ? 'Đang lưu...' : 'Lưu'}
+                  </button>
+                  <button className="cancel" onClick={() => setShowServiceModal(false)}>Hủy</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

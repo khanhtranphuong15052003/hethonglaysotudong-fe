@@ -11,10 +11,6 @@ import {
   onSocketError,
   onStaffDisplayUpdated,
 } from "@/lib/staff-socket";
-import {
-  speakVietnameseAnnouncement,
-  waitForResponsiveVoice,
-} from "@/lib/voice";
 
 interface Ticket {
   id: string;
@@ -39,6 +35,7 @@ interface DisplayData {
   counter: Counter;
   services: Array<{ id: string; name: string; code: string }>;
   currentTicket: Ticket | null;
+  processingTickets?: Ticket[];
   waitingTickets: Ticket[];
   totalWaiting: number;
 }
@@ -79,7 +76,8 @@ export default function CounterDisplayPage() {
       counter: snapshot.counter,
       services: snapshot.services,
       currentTicket: snapshot.currentTicket,
-      waitingTickets: snapshot.waitingTickets,
+      processingTickets: snapshot.processingTickets as Ticket[],
+      waitingTickets: snapshot.waitingTickets as unknown as Ticket[],
       totalWaiting: snapshot.totalWaiting,
     });
   };
@@ -141,7 +139,6 @@ export default function CounterDisplayPage() {
   }, [counterParam, resolveCounterId]);
 
   useEffect(() => {
-    waitForResponsiveVoice();
     if (counterParam) {
       void fetchDisplayData();
     }
@@ -157,16 +154,11 @@ export default function CounterDisplayPage() {
     const unsubscribe = onStaffDisplayUpdated(
       socket,
       (payload: StaffDisplayUpdatedPayload) => {
-        if (payload.counterId !== resolvedCounterId) {
+        if (payload.counterId && payload.counterId !== resolvedCounterId) {
           return;
         }
 
         applySnapshot(payload.data);
-
-        if (payload.reason === "ticket-called" && payload.data.currentTicket) {
-          const textToSpeak = `Mời số ${getTicketDisplayNumber(payload.data.currentTicket as Ticket)} đến ${payload.data.counter.name}`;
-          void speakVietnameseAnnouncement(textToSpeak);
-        }
       },
     );
     const unsubscribeSocketError = onSocketError(socket, (payload) => {
@@ -232,7 +224,9 @@ export default function CounterDisplayPage() {
   }
 
   const allTickets: Ticket[] = [];
-  if (data.currentTicket) {
+  if (data.processingTickets && data.processingTickets.length > 0) {
+    allTickets.push(...data.processingTickets);
+  } else if (data.currentTicket) {
     allTickets.push(data.currentTicket);
   }
   allTickets.push(...data.waitingTickets);
@@ -310,19 +304,34 @@ export default function CounterDisplayPage() {
               minWidth: 0,
             }}
           >
-            <h1
-              style={{
-                margin: 0,
-                fontSize: "clamp(18px, 2.4vw, 30px)",
-                fontWeight: 800,
-                lineHeight: 1.1,
-                letterSpacing: "0.2px",
-                textTransform: "uppercase",
-                color: "#111111",
-              }}
-            >
-              TÒA ÁN NHÂN DÂN KHU VỰC 1
-            </h1>
+              <div style={{ textAlign: 'left' }}>
+                <div
+                  style={{
+                    margin: 0,
+                    fontSize: "clamp(16px, 2vw, 26px)",
+                    fontWeight: 900,
+                    lineHeight: 1.2,
+                    letterSpacing: "0.5px",
+                    textTransform: "uppercase",
+                    color: "#111111",
+                  }}
+                >
+                  TÒA ÁN
+                </div>
+                <div
+                  style={{
+                    margin: 0,
+                    fontSize: "clamp(16px, 2vw, 26px)",
+                    fontWeight: 800,
+                    lineHeight: 1.1,
+                    letterSpacing: "0.2px",
+                    textTransform: "uppercase",
+                    color: "#111111",
+                  }}
+                >
+                  NHÂN DÂN KHU VỰC 1
+                </div>
+              </div>
             <div
               style={{
                 marginTop: "clamp(1px, 0.25vh, 4px)",
@@ -349,7 +358,7 @@ export default function CounterDisplayPage() {
             flexShrink: 0,
           }}
         >
-          <h2
+          {/* <h2
             style={{
               margin: 0,
               fontSize: "clamp(18px, 2.2vw, 32px)",
@@ -361,7 +370,7 @@ export default function CounterDisplayPage() {
             }}
           >
             Danh Sách Chờ Xử Lý
-          </h2>
+          </h2> */}
           <div
             style={{
               fontSize: "clamp(18px, 2vw, 28px)",
@@ -422,7 +431,7 @@ export default function CounterDisplayPage() {
                   textTransform: "uppercase",
                 }}
               >
-                Dịch Vụ
+                Yêu Cầu
               </th>
               <th
                 style={{
@@ -667,7 +676,7 @@ export default function CounterDisplayPage() {
 
       <div
         style={{
-          background: "linear-gradient(180deg, #e6eef9 0%, #d8e7fb 100%)",
+          // background: "linear-gradient(180deg, #e6eef9 0%, #d8e7fb 100%)",
           padding: "clamp(6px, 0.8vh, 10px) clamp(16px, 2vw, 28px)",
           display: "flex",
           alignItems: "center",
@@ -676,19 +685,21 @@ export default function CounterDisplayPage() {
           minHeight: INFO_BAR_HEIGHT,
           flexShrink: 0,
           textAlign: "center",
+          background:"red",
         }}
       >
         <div
           style={{
             fontSize: "clamp(18px, 2vw, 28px)",
             fontWeight: 800,
-            color: "#003366",
+            color: "white",
             letterSpacing: "0.3px",
             textTransform: "uppercase",
             lineHeight: 1.1,
+            
           }}
         >
-          Còn 500 vé chờ xử lý
+          Còn {data.totalWaiting} đương sự chờ xử lý
         </div>
       </div>
 

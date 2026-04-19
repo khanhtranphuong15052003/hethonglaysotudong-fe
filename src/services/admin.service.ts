@@ -11,6 +11,25 @@ const getAuthHeaders = () => {
   return headers;
 };
 
+const parseJsonResponse = async <T>(response: Response): Promise<T> => {
+  const contentType = response.headers.get("content-type") || "";
+  const raw = await response.text();
+
+  if (!contentType.includes("application/json")) {
+    throw new Error(
+      `API trả về dữ liệu không hợp lệ (${response.status}) từ ${response.url}. Kiểm tra NEXT_PUBLIC_BACKEND_API_URL.`,
+    );
+  }
+
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    throw new Error(
+      `Không đọc được JSON từ ${response.url}. Kiểm tra API backend theo biến môi trường.`,
+    );
+  }
+};
+
 // ==================== SERVICES ====================
 export interface Service {
   _id: string;
@@ -20,6 +39,7 @@ export interface Service {
   isActive: boolean;
   description: string;
   displayOrder: number;
+  prefixNumber: number;
   counters: Array<{
     _id: string;
     code: string;
@@ -74,7 +94,7 @@ export async function createService(
     headers: getAuthHeaders(),
     body: JSON.stringify(serviceData),
   });
-  const data = await response.json();
+  const data = await parseJsonResponse<{ success: boolean; data: Service; message?: string }>(response);
   if (data.success) return data.data;
   throw new Error(data.message || "Lỗi tạo dịch vụ");
 }
@@ -88,7 +108,7 @@ export async function updateService(
     headers: getAuthHeaders(),
     body: JSON.stringify(serviceData),
   });
-  const data = await response.json();
+  const data = await parseJsonResponse<{ success: boolean; data: Service; message?: string }>(response);
   if (data.success) return data.data;
   throw new Error(data.message || "Lỗi cập nhật dịch vụ");
 }
@@ -257,6 +277,16 @@ export async function deletePrinter(id: string): Promise<void> {
 }
 
 // ==================== STAFF ====================
+export interface StaffServiceInfo {
+  id: string;
+  _id: string;
+  code: string;
+  name: string;
+  icon?: string;
+  displayOrder?: number;
+  isActive?: boolean;
+}
+
 export interface Staff {
   _id: string;
   username: string;
@@ -269,6 +299,10 @@ export interface Staff {
   } | null;
   isActive: boolean;
   lastLoginAt: string | null;
+  serviceRestrictionConfigured?: boolean;
+  availableServices?: StaffServiceInfo[];
+  assignedServices?: StaffServiceInfo[];
+  effectiveServices?: StaffServiceInfo[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -299,6 +333,15 @@ export async function createStaff(
   });
   const data = await response.json();
   if (data.success) return data.data;
+
+  // Trích xuất thông báo lỗi cụ thể từ mảng errors (validation errors)
+  if (Array.isArray(data.errors) && data.errors.length > 0) {
+    const errorMessages = data.errors
+      .map((err: { field?: string; message?: string }) => err.message || err.field || "Lỗi không xác định")
+      .join("; ");
+    throw new Error(errorMessages);
+  }
+
   throw new Error(data.message || "Lỗi tạo nhân viên");
 }
 
@@ -313,6 +356,15 @@ export async function updateStaff(
   });
   const data = await response.json();
   if (data.success) return data.data;
+
+  // Trích xuất thông báo lỗi cụ thể từ mảng errors (validation errors)
+  if (Array.isArray(data.errors) && data.errors.length > 0) {
+    const errorMessages = data.errors
+      .map((err: { field?: string; message?: string }) => err.message || err.field || "Lỗi không xác định")
+      .join("; ");
+    throw new Error(errorMessages);
+  }
+
   throw new Error(data.message || "Lỗi cập nhật nhân viên");
 }
 
@@ -387,4 +439,43 @@ export async function removeServiceFromCounter(
   const data = await response.json();
   if (data.success) return data.data;
   throw new Error(data.message || "Lỗi xóa dịch vụ khỏi quầy");
+}
+
+// ==================== STAFF SERVICE ASSIGNMENT ====================
+export interface StaffServicesResponse {
+  staffId: string;
+  counterId?: string;
+  serviceRestrictionConfigured: boolean;
+  availableServices: StaffServiceInfo[];
+  assignedServices: StaffServiceInfo[];
+  effectiveServices: StaffServiceInfo[];
+}
+
+export async function getStaffServices(staffId: string): Promise<StaffServicesResponse> {
+  const response = await fetch(`${API_BASE}/admin/users/staff/${staffId}/services`, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error(`404: API gán dịch vụ chưa được deploy (GET /staff/${staffId}/services trả ${response.status})`);
+  }
+  const data = await response.json();
+  if (data.success) return data.data;
+  throw new Error(data.message || "Lỗi lấy thông tin dịch vụ nhân viên");
+}
+
+export async function updateStaffServices(
+  staffId: string,
+  serviceIds: string[],
+): Promise<StaffServicesResponse> {
+  const response = await fetch(`${API_BASE}/admin/users/staff/${staffId}/services`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ serviceIds }),
+  });
+  if (!response.ok) {
+    throw new Error(`404: API gán dịch vụ chưa được deploy (PUT /staff/${staffId}/services trả ${response.status})`);
+  }
+  const data = await response.json();
+  if (data.success) return data.data;
+  throw new Error(data.message || "Lỗi cập nhật dịch vụ nhân viên");
 }

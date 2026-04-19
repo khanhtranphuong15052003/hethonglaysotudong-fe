@@ -102,8 +102,8 @@ function ServiceTicketContent() {
       return;
     }
 
-    if (!/^[0-9]{10}$/.test(phoneNumber.replace(/\D/g, ""))) {
-      showToast("Vui lòng nhập đúng số điện thoại - 10 số", "error");
+    if (!/^[0-9]{8,10}$/.test(phoneNumber.replace(/\D/g, ""))) {
+      showToast("Vui lòng nhập đúng số điện thoại - từ 8 đến 10 số", "error");
       return;
     }
 
@@ -202,8 +202,8 @@ function ServiceTicketContent() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        justifyContent: step === "done" ? "flex-start" : "center",
-        minHeight: "70vh",
+        justifyContent: "center",
+        minHeight: "calc(100vh - 120px)", // Adjust based on header height
         paddingTop: 0,
         paddingBottom: 20,
       }}
@@ -563,30 +563,44 @@ function ServiceTicketContent() {
           <div
             style={{
               width: "25%",
-              background: "white",
-              padding: 20,
-              borderRadius: 14,
+              background: "#ffffff", // Light blue background
+              padding: "24px",
+              borderRadius: 12, // Softer corners
               border: "1px solid #dbe6f2",
-              boxShadow: "0 10px 24px rgba(0, 39, 91, 0.1)",
-              textAlign: "left",
+              boxShadow: "0 4px 12px rgba(0, 39, 91, 0.08)",
+              textAlign: "center", // Center align all content
               display: "flex",
               flexDirection: "column",
               justifyContent: "center",
+              gap: 16, // Add gap between elements
             }}
           >
-            <h1 style={{ color: "#003366", textTransform: "uppercase", fontSize: 20, textAlign: 'center', marginBottom: 20, fontWeight: "bold" }}>
+            <h1 style={{ 
+              color: "#003366", 
+              textTransform: "uppercase", 
+              fontSize: 22, 
+              fontWeight: "bold",
+              margin: 0,
+            }}>
               Yêu cầu - Phản ánh
             </h1>
-            <p style={{ fontSize: 16, color: "#333", lineHeight: 1.6 }}>
-            Mọi ý kiến đóng góp, độ hài lòng, phản ánh tiêu cực gửi trực tiếp đến Chánh án TAND Khu vực 1, vui lòng email về:
+            <p style={{ 
+              fontSize: 16, 
+              color: "#334155", // Softer text color
+              lineHeight: 1.7,
+              margin: 0,
+            }}>
+              Mọi ý kiến đóng góp, độ hài lòng, hoặc phản ánh tiêu cực, vui lòng gửi trực tiếp đến Chánh án TAND Khu vực 1 qua email:
               <br />
               <strong style={{ 
-    display: "block", 
-    textAlign: "center", 
-    marginTop: 10,
-    color: "#003366"
-  }} >TAKV1.HCM.@TOAANSO.VN</strong>
-            
+                display: "block", 
+                marginTop: 12,
+                color: "#003366",
+                fontSize: 17,
+                letterSpacing: '0.5px'
+              }} >
+                TAKV1.HCM@TOAAN.GOV.VN
+              </strong>
             </p>
           </div>
         </div>

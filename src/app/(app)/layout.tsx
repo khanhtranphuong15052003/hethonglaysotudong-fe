@@ -11,10 +11,10 @@ export default function AppLayout({
       {/* HEADER */}
       <header
         style={{
-          height: 100,
+          height: 80,
           display: "flex",
           alignItems: "center",
-          padding: "0 20px",
+          padding: "20px 20px 0",
           fontSize: 20,
           position: "relative",
           justifyContent: "center",
@@ -33,12 +33,10 @@ export default function AppLayout({
             src="/assets/logotoaan.png"
             alt="Logo"
             style={{
-              height: 100,
+              height: 80,
               width: "auto",
-              maxHeight: 120,
               objectFit: "contain",
               flexShrink: 0,
-              paddingTop:10
             }}
           />
 
@@ -49,7 +47,6 @@ export default function AppLayout({
               flexDirection: "column",
               justifyContent: "center",
               alignItems: "flex-start",
-              paddingTop:10,
             }}
           >
             <h1 style={{ margin: 0, fontSize: 32, fontWeight: 750 }}>
@@ -90,7 +87,7 @@ export default function AppLayout({
       <main
         style={{
           flex: 1,
-          padding: "40px clamp(44px, 3.4vw, 64px)",
+          padding: "2rem clamp(4px, 3.4vw, 64px) 20px", // Added top padding
           minHeight: 0,
           overflow: "hidden",
         }}

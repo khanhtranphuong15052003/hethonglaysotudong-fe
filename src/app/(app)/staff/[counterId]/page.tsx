@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -7,12 +7,14 @@ import Toast from "@/components/Toast";
 import ConfirmModal from "@/components/ConfirmModal";
 import {
   getStaffDisplay,
-  callNextTicket,
+  callTicketById,
   completeTicketApi,
   skipTicketApi,
   AUTH_EXPIRED_ERROR,
+  getRecallList,
+  recallTicket,
+  recallProcessingTicketApi,
 } from "@/services/ticket.service";
-import { speakTicketCall, waitForResponsiveVoice } from "@/lib/voice";
 import {
   StaffDisplayUpdatedPayload,
   createStaffSocket,
@@ -32,7 +34,11 @@ export default function StaffCounterPage() {
 
   const [counter, setCounter] = useState<Counter | null>(null);
   const [staffName, setStaffName] = useState<string>("");
+  const [staffId, setStaffId] = useState<string>("");
+  const [restricted, setRestricted] = useState<boolean>(false);
   const [waitingTickets, setWaitingTickets] = useState<Ticket[]>([]);
+  const [recallTickets, setRecallTickets] = useState<Ticket[]>([]);
+  const [activeTab, setActiveTab] = useState<"waiting" | "recall">("waiting");
   const [totalWaiting, setTotalWaiting] = useState(0);
   const [currentTicket, setCurrentTicket] = useState<Ticket | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,9 +73,9 @@ export default function StaffCounterPage() {
 
   const handleSessionExpired = useCallback(() => {
     if (typeof window !== "undefined") {
-      localStorage.removeItem("staffToken");
-      localStorage.removeItem("staffUser");
-      localStorage.removeItem("staffName");
+      sessionStorage.removeItem("staffToken");
+      sessionStorage.removeItem("staffUser");
+      sessionStorage.removeItem("staffName");
     }
     router.push("/staff/login?reason=session_expired");
   }, [router]);
@@ -91,13 +97,21 @@ export default function StaffCounterPage() {
     }
   };
 
-  useEffect(() => {
-    waitForResponsiveVoice();
-  }, []);
+  const applyAdditionalInfo = (info: {
+    staffId?: string;
+    serviceRestrictionConfigured?: boolean;
+  }) => {
+    if (info.staffId) setStaffId(info.staffId);
+    if (info.serviceRestrictionConfigured !== undefined) {
+      setRestricted(info.serviceRestrictionConfigured);
+    }
+  };
+
+
 
   useEffect(() => {
     const token =
-      typeof window !== "undefined" ? localStorage.getItem("staffToken") : null;
+      typeof window !== "undefined" ? sessionStorage.getItem("staffToken") : null;
     if (!token) {
       router.push("/staff/login");
       return;
@@ -115,14 +129,15 @@ export default function StaffCounterPage() {
             waitingTickets,
             totalWaiting,
             staffName,
+            staffId,
+            serviceRestrictionConfigured,
           } = response.data;
 
           if (counter.id !== counterId) {
-            localStorage.removeItem("staffToken");
+            sessionStorage.removeItem("staffToken");
             router.push("/staff/login?error=unauthorized");
             return;
           }
-
           applySnapshot({
             counter,
             services,
@@ -131,9 +146,11 @@ export default function StaffCounterPage() {
             totalWaiting,
             staffName,
           });
+          applyAdditionalInfo({ staffId, serviceRestrictionConfigured });
           setAuthenticated(true);
+          handleRecallListRefresh();
         } else {
-          localStorage.removeItem("staffToken");
+          sessionStorage.removeItem("staffToken");
           router.push("/staff/login?error=session_expired");
         }
     } catch (error) {
@@ -142,7 +159,7 @@ export default function StaffCounterPage() {
         handleSessionExpired();
         return;
       }
-      localStorage.removeItem("staffToken");
+      sessionStorage.removeItem("staffToken");
       router.push("/staff/login?error=fetch_failed");
       } finally {
         setLoading(false);
@@ -162,7 +179,9 @@ export default function StaffCounterPage() {
     const unsubscribe = onStaffDisplayUpdated(
       socket,
       (payload: StaffDisplayUpdatedPayload) => {
-        if (payload.counterId !== counterId) {
+        // Chỉ chấp nhận event dành riêng cho staff này
+        // Event từ room staff-display-{staffId} luôn có payload.staffId khớp
+        if (payload.staffId !== staffId) {
           return;
         }
 
@@ -173,12 +192,8 @@ export default function StaffCounterPage() {
           waitingTickets: payload.data.waitingTickets as Ticket[],
           totalWaiting: payload.data.totalWaiting,
         });
-        if (payload.reason === "ticket-called" && payload.data.currentTicket) {
-          void speakTicketCall(
-            getTicketDisplayNumber(payload.data.currentTicket as Ticket),
-            payload.data.currentTicket.customerName,
-            payload.data.counter.name,
-          );
+        if (payload.data.recallTickets) {
+          setRecallTickets(payload.data.recallTickets as Ticket[]);
         }
       },
     );
@@ -190,7 +205,7 @@ export default function StaffCounterPage() {
     });
 
     socket.on("connect", () => {
-      joinCounterRoom(socket, counterId);
+      joinCounterRoom(socket, counterId, staffId);
       console.log("Socket connected on staff screen");
     });
 
@@ -208,21 +223,37 @@ export default function StaffCounterPage() {
       unsubscribeSocketError();
       socket.disconnect();
     };
-  }, [authenticated, counterId]);
+  }, [authenticated, counterId, staffId]);
 
   const handleCallNext = async () => {
+    // Nếu đang có vé xử lý → gọi lại vé đó
     if (currentTicket) {
-      showToast("Đang gọi lại!", "info");
-      void speakTicketCall(
-        getTicketDisplayNumber(currentTicket),
-        currentTicket.customerName,
-        counter?.name || "",
-      );
+      try {
+        const response = await recallProcessingTicketApi(currentTicket.id);
+        if (response.success) {
+          showToast("Đang gọi lại!", "info");
+        } else {
+          showToast(response.message || "Không thể gọi lại vé!", "error");
+        }
+      } catch (error) {
+        if (error instanceof Error && error.message === AUTH_EXPIRED_ERROR) {
+          handleSessionExpired();
+          return;
+        }
+        showToast("Lỗi hệ thống khi gọi lại vé!", "error");
+      }
+      return;
+    }
+
+    // Lấy vé đầu tiên trong danh sách chờ (đã được lọc theo service của staff)
+    const nextTicket = waitingTickets[0];
+    if (!nextTicket) {
+      showToast("Không có vé nào trong hàng chờ!", "warning");
       return;
     }
 
     try {
-      const response = await callNextTicket(counterId);
+      const response = await callTicketById(nextTicket.id, counterId);
       if (response.success) {
         showToast(response.message, "success");
       } else {
@@ -233,8 +264,37 @@ export default function StaffCounterPage() {
         handleSessionExpired();
         return;
       }
-      console.error("Call next error:", error);
+      console.error("Call ticket error:", error);
       showToast("Lỗi hệ thống khi đang gọi vé!", "error");
+    }
+  };
+
+  const handleRecallListRefresh = async () => {
+    try {
+      const res = await getRecallList();
+      if (res.success) {
+        setRecallTickets(res.data || []);
+      }
+    } catch (err) {
+      console.error("Failed to refresh recall list:", err);
+    }
+  };
+
+  const handleRecallTicketAction = async (ticketId: string) => {
+    try {
+      const response = await recallTicket(ticketId);
+      if (response.success) {
+        showToast("Đang gọi lại!", "success");
+        void handleRecallListRefresh();
+      } else {
+        showToast(response.message || "Không thể gọi lại vé!", "error");
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message === AUTH_EXPIRED_ERROR) {
+        handleSessionExpired();
+        return;
+      }
+      showToast("Lỗi hệ thống khi gọi lại vé!", "error");
     }
   };
 
@@ -284,6 +344,7 @@ export default function StaffCounterPage() {
           const response = await skipTicketApi(currentTicket.id);
           if (response.success) {
             showToast(response.message, "success");
+            void handleRecallListRefresh();
           } else {
             showToast(response.message || "Không thể bỏ qua vé!", "error");
           }
@@ -306,8 +367,8 @@ export default function StaffCounterPage() {
       title: "Xác nhận đăng xuất",
       message: "Bạn có chắc chắn muốn đăng xuất?",
       onConfirm: () => {
-        localStorage.removeItem("staffToken");
-        localStorage.removeItem("staffName");
+        sessionStorage.removeItem("staffToken");
+        sessionStorage.removeItem("staffName");
         setConfirmModal((prev) => ({ ...prev, isOpen: false }));
         router.push("/staff/login");
       },
@@ -329,9 +390,11 @@ export default function StaffCounterPage() {
         display: "flex",
         flexDirection: "column",
         width: "min(1420px, 100%)",
+        height: "100%",
         maxWidth: "100%",
         padding: "0 clamp(16px, 2.4vw, 36px)",
         boxSizing: "border-box",
+        margin: "0 auto",
       }}
     >
       <div
@@ -340,14 +403,14 @@ export default function StaffCounterPage() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "clamp(16px, 2vh, 24px)",
+          marginBottom: "clamp(6px, 1vh, 12px)",
           fontSize: "clamp(14px, 1.2vw, 20px)",
           gap: "12px",
           flexWrap: "wrap",
         }}
       >
         <div style={{ color: "#666", fontSize: "clamp(14px, 1.1vw, 18px)" }}>
-          {staffName && `Xin chào: ${staffName}`}
+          {staffName && `Xin chào: ${staffName}`} {restricted && <span style={{ marginLeft: 8, fontSize: '0.85em', color: '#856404', backgroundColor: '#fff3cd', padding: '2px 8px', borderRadius: '4px' }}>Đang áp dụng giới hạn dịch vụ</span>}
         </div>
         <button
           onClick={handleLogout}
@@ -372,18 +435,38 @@ export default function StaffCounterPage() {
         style={{ display: "flex", gap: "clamp(16px, 2vw, 28px)", flex: 1 }}
       >
         <div className="staff-page__queue" style={{ flex: 0.6, overflowY: "auto", minWidth: 0 }}>
-          <h3
-            className="staff-page__title"
-            style={{
-              marginTop: 0,
-              marginBottom: "clamp(12px, 1.6vh, 18px)",
-              color: "#003366",
-              fontSize: "clamp(24px, 2.3vw, 34px)",
-              fontWeight: 700,
-            }}
-          >
-            Danh sách chờ ({totalWaiting} người)
-          </h3>
+          <div style={{ display: "flex", gap: "16px", marginBottom: "clamp(12px, 1.6vh, 18px)", borderBottom: "2px solid #eee" }}>
+            <h3
+              onClick={() => setActiveTab("waiting")}
+              style={{
+                margin: 0,
+                paddingBottom: "8px",
+                color: activeTab === "waiting" ? "#003366" : "#999",
+                fontSize: "clamp(20px, 2vw, 28px)",
+                fontWeight: 700,
+                cursor: "pointer",
+                borderBottom: activeTab === "waiting" ? "3px solid #003366" : "3px solid transparent",
+                transition: "all 0.2s"
+              }}
+            >
+              Đang chờ ({totalWaiting})
+            </h3>
+            <h3
+              onClick={() => setActiveTab("recall")}
+              style={{
+                margin: 0,
+                paddingBottom: "8px",
+                color: activeTab === "recall" ? "#003366" : "#999",
+                fontSize: "clamp(20px, 2vw, 28px)",
+                fontWeight: 700,
+                cursor: "pointer",
+                borderBottom: activeTab === "recall" ? "3px solid #003366" : "3px solid transparent",
+                transition: "all 0.2s"
+              }}
+            >
+              Bỏ qua ({recallTickets.length})
+            </h3>
+          </div>
           <table
             className="staff-page__table"
             style={{
@@ -397,66 +480,108 @@ export default function StaffCounterPage() {
             }}
           >
             <thead>
-              <tr
-                style={{
-                  background: "#003366",
-                  color: "white",
-                }}
-              >
+              <tr style={{ background: "#003366", color: "white" }}>
                 <th style={{ width: "10%", padding: "clamp(8px, 1vh, 12px) 10px", borderRight: "1px solid #ddd", fontSize: "clamp(12px, 0.9vw, 16px)" }}>STT</th>
                 <th style={{ width: "20%", padding: "clamp(8px, 1vh, 12px) 10px", borderRight: "1px solid #ddd", fontSize: "clamp(12px, 0.9vw, 16px)" }}>SỐ PHIẾU</th>
-                <th style={{ width: "42%", padding: "clamp(8px, 1vh, 12px) 10px", borderRight: "1px solid #ddd", fontSize: "clamp(12px, 0.9vw, 16px)" }}>TÊN</th>
-                <th style={{ width: "28%", padding: "clamp(8px, 1vh, 12px) 10px", fontSize: "clamp(12px, 0.9vw, 16px)" }}>DỊCH VỤ</th>
+                <th style={{ width: activeTab === "recall" ? "30%" : "42%", padding: "clamp(8px, 1vh, 12px) 10px", borderRight: "1px solid #ddd", fontSize: "clamp(12px, 0.9vw, 16px)" }}>TÊN</th>
+                <th style={{ width: activeTab === "recall" ? "20%" : "28%", padding: "clamp(8px, 1vh, 12px) 10px", borderRight: activeTab === "recall" ? "1px solid #ddd" : "none", fontSize: "clamp(12px, 0.9vw, 16px)" }}>DỊCH VỤ</th>
+                {activeTab === "recall" && (
+                  <th style={{ width: "20%", padding: "clamp(8px, 1vh, 12px) 10px", fontSize: "clamp(12px, 0.9vw, 16px)" }}>HÀNH ĐỘNG</th>
+                )}
               </tr>
             </thead>
             <tbody>
-              {waitingTickets.slice(0, 10).length > 0 ? (
-                waitingTickets.slice(0, 10).map((ticket, index) => (
-                  <tr key={ticket.id} style={{ borderBottom: "1px solid #e0e0e0" }}>
-                    <td style={{ padding: "clamp(8px, 0.95vh, 12px) 10px", borderRight: "1px solid #ddd", fontSize: "clamp(14px, 1vw, 18px)" }}>
-                      {index + 1}
-                    </td>
-                    <td style={{ padding: "clamp(8px, 0.95vh, 12px) 10px", color: "#003366", fontWeight: 700, fontSize: "clamp(16px, 1.25vw, 20px)", borderRight: "1px solid #ddd" }}>
-                      {getTicketDisplayNumber(ticket)}
-                    </td>
+              {activeTab === "waiting" ? (
+                waitingTickets.length > 0 ? (
+                  waitingTickets.map((ticket, index) => (
+                    <tr key={ticket.id} style={{ borderBottom: "1px solid #e0e0e0" }}>
+                      <td style={{ padding: "clamp(8px, 0.95vh, 12px) 10px", borderRight: "1px solid #ddd", fontSize: "clamp(14px, 1vw, 18px)" }}>
+                        {index + 1}
+                      </td>
+                      <td style={{ padding: "clamp(8px, 0.95vh, 12px) 10px", color: "#003366", fontWeight: 700, fontSize: "clamp(16px, 1.25vw, 20px)", borderRight: "1px solid #ddd" }}>
+                        {getTicketDisplayNumber(ticket)}
+                      </td>
+                      <td
+                        style={{
+                          padding: "clamp(8px, 0.95vh, 12px) 10px",
+                          borderRight: "1px solid #ddd",
+                          fontSize: "clamp(14px, 1vw, 17px)",
+                          lineHeight: 1.2,
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {ticket.customerName}
+                      </td>
+                      <td
+                        style={{
+                          padding: "clamp(8px, 0.95vh, 12px) 10px",
+                          fontSize: "clamp(14px, 1vw, 17px)",
+                          fontWeight: 600,
+                          lineHeight: 1.2,
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {ticket.serviceName}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
                     <td
+                      colSpan={4}
                       style={{
-                        padding: "clamp(8px, 0.95vh, 12px) 10px",
-                        borderRight: "1px solid #ddd",
-                        fontSize: "clamp(14px, 1vw, 17px)",
-                        lineHeight: 1.2,
-                        wordBreak: "break-word",
+                        padding: "24px 16px",
+                        color: "#6b7280",
+                        fontStyle: "italic",
+                        fontSize: 22,
                       }}
                     >
-                      {ticket.customerName}
-                    </td>
-                    <td
-                      style={{
-                        padding: "clamp(8px, 0.95vh, 12px) 10px",
-                        fontSize: "clamp(14px, 1vw, 17px)",
-                        fontWeight: 600,
-                        lineHeight: 1.2,
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      {ticket.serviceName}
+                      Không có vé chờ
                     </td>
                   </tr>
-                ))
+                )
               ) : (
-                <tr>
-                  <td
-                    colSpan={4}
-                    style={{
-                      padding: "24px 16px",
-                      color: "#6b7280",
-                      fontStyle: "italic",
-                      fontSize: 22,
-                    }}
-                  >
-                    Không có vé chờ
-                  </td>
-                </tr>
+                recallTickets.length > 0 ? (
+                  recallTickets.map((ticket, index) => (
+                    <tr key={ticket.id || (ticket as any)._id} style={{ borderBottom: "1px solid #e0e0e0" }}>
+                      <td style={{ padding: "clamp(8px, 0.95vh, 12px) 10px", borderRight: "1px solid #ddd", fontSize: "clamp(14px, 1vw, 18px)" }}>
+                        {index + 1}
+                      </td>
+                      <td style={{ padding: "clamp(8px, 0.95vh, 12px) 10px", color: "#003366", fontWeight: 700, fontSize: "clamp(16px, 1.25vw, 20px)", borderRight: "1px solid #ddd" }}>
+                        {getTicketDisplayNumber(ticket)}
+                      </td>
+                      <td style={{ padding: "clamp(8px, 0.95vh, 12px) 10px", borderRight: "1px solid #ddd", fontSize: "clamp(14px, 1vw, 17px)", lineHeight: 1.2, wordBreak: "break-word" }}>
+                        {ticket.customerName}
+                      </td>
+                      <td style={{ padding: "clamp(8px, 0.95vh, 12px) 10px", borderRight: "1px solid #ddd", fontSize: "clamp(14px, 1vw, 17px)", fontWeight: 600, lineHeight: 1.2, wordBreak: "break-word" }}>
+                        {ticket.serviceName}
+                      </td>
+                      <td style={{ padding: "clamp(8px, 0.95vh, 12px) 10px" }}>
+                        <button
+                          onClick={() => handleRecallTicketAction(ticket.id || (ticket as any)._id)}
+                          style={{
+                            padding: "6px 12px",
+                            background: "#003366",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            fontSize: "clamp(13px, 0.9vw, 15px)",
+                            fontWeight: 600
+                          }}
+                        >
+                          Gọi lại
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} style={{ padding: "24px 16px", color: "#6b7280", fontStyle: "italic", fontSize: 22 }}>
+                      Không có vé bỏ qua
+                    </td>
+                  </tr>
+                )
               )}
             </tbody>
           </table>
