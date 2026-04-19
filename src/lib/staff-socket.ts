@@ -1,33 +1,7 @@
 "use client";
 
 import { io, Socket } from "socket.io-client";
-
-function trimTrailingSlash(value: string) {
-  return value.endsWith("/") ? value.slice(0, -1) : value;
-}
-
-function stripApiSuffix(value: string) {
-  return value.replace(/\/api$/i, "");
-}
-
-function getSocketBaseUrl() {
-  const explicitSocketUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
-  if (explicitSocketUrl) {
-    return trimTrailingSlash(explicitSocketUrl);
-  }
-
-  const backendApiUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL;
-  if (backendApiUrl) {
-    return trimTrailingSlash(stripApiSuffix(backendApiUrl));
-  }
-
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (apiUrl) {
-    return trimTrailingSlash(apiUrl);
-  }
-
-  return "";
-}
+import { getSocketBaseUrl } from "@/lib/runtime-config";
 
 const SOCKET_BASE_URL = getSocketBaseUrl();
 

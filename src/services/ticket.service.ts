@@ -1,4 +1,6 @@
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+import { getPublicApiBase } from "@/lib/runtime-config";
+
+const API_URL = getPublicApiBase();
 const AUTH_EXPIRED_ERROR = "AUTH_EXPIRED";
 
 const normalizeApiErrorMessage = (message?: string) => {

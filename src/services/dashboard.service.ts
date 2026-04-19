@@ -3,8 +3,9 @@
 import {
   ADMIN_AUTH_EXPIRED_ERROR,
 } from "@/lib/admin-auth";
+import { getPublicApiBase } from "@/lib/runtime-config";
 
-const API_BASE = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+const API_BASE = getPublicApiBase();
 export const DASHBOARD_AUTH_EXPIRED_ERROR = ADMIN_AUTH_EXPIRED_ERROR;
 
 const getAuthHeaders = () => {

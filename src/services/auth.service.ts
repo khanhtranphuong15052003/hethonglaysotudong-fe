@@ -1,6 +1,8 @@
 // src/services/auth.service.ts
 
-const API_BASE = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+import { getPublicApiBase } from "@/lib/runtime-config";
+
+const API_BASE = getPublicApiBase();
 
 export interface StaffLoginResponse {
   success: boolean;

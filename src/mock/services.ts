@@ -1,3 +1,5 @@
+import { getPublicApiBase } from "@/lib/runtime-config";
+
 export interface Service {
   _id: string;
   name: string;
@@ -82,9 +84,7 @@ export const services: Service[] = [
 // Fetch services từ API
 export async function getServices(): Promise<Service[]> {
   try {
-    const apiBase =
-      process.env.NEXT_PUBLIC_BACKEND_API_URL ||
-      `${process.env.NEXT_PUBLIC_API_URL}/api`;
+    const apiBase = getPublicApiBase();
     const apiUrl = `${apiBase}/services/active`;
     const response = await fetch(apiUrl);
     if (!response.ok) throw new Error("Failed to fetch services");
