@@ -1,9 +1,22 @@
+const stripTrailingSlash = (value: string) =>
+  value.endsWith("/") ? value.slice(0, -1) : value;
+
+const normalizeApiBase = (value?: string) => {
+  if (!value) {
+    return "";
+  }
+
+  const normalized = stripTrailingSlash(value.trim());
+  return normalized.endsWith("/api") ? normalized : `${normalized}/api`;
+};
+
 export async function GET(request: Request) {
   try {
-    const apiBase =
+    const apiBase = normalizeApiBase(
       process.env.BACKEND_API_URL ||
-      process.env.NEXT_PUBLIC_BACKEND_API_URL ||
-      `${process.env.NEXT_PUBLIC_API_URL}/api`;
+        process.env.NEXT_PUBLIC_BACKEND_API_URL ||
+        process.env.NEXT_PUBLIC_API_URL,
+    );
     const apiUrl = `${apiBase}/services/active`;
 
     const response = await fetch(apiUrl, {
