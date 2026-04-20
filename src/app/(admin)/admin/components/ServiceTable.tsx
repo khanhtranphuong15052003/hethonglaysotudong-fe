@@ -489,7 +489,7 @@ export default function ServiceTable() {
               ×
             </button>
             <h3 style={{ marginTop: 0, marginBottom: 20 }}>
-              {editingId ? "Chỉnh Sửa Dịch Vụ" : "Thêm Dịch Vụ Mới"}
+              {editingId ? "Chỉnh Sửa Quầy" : "Thêm Quầy Mới"}
             </h3>
 
             <div
@@ -502,7 +502,7 @@ export default function ServiceTable() {
               {/* Left Column - Info & Status */}
               <div>
                 <div className="admin-form-group">
-                  <label className="admin-form-label">Mã Dịch Vụ:</label>
+                  <label className="admin-form-label">Mã Quầy:</label>
                   <input
                     type="text"
                     className="admin-form-input"
@@ -558,7 +558,7 @@ export default function ServiceTable() {
                 </div>
 
                 <div className="admin-form-group">
-                  <label className="admin-form-label">Tên Dịch Vụ:</label>
+                  <label className="admin-form-label">Tên Quầy:</label>
                   <input
                     type="text"
                     className="admin-form-input"
@@ -717,7 +717,7 @@ export default function ServiceTable() {
 
             <div style={{ marginTop: "20px" }}>
               <div className="admin-form-group" style={{ marginBottom: 0 }}>
-                <label className="admin-form-label">Thêm dịch vụ vào quầy đã có:</label>
+                <label className="admin-form-label">Thêm quầy vào phòng đã có:</label>
                 <div
                   style={{
                     border: "1px solid #d0d0d0",
@@ -732,7 +732,7 @@ export default function ServiceTable() {
                 >
                   {counters.length === 0 ? (
                     <span style={{ color: "#999", fontSize: "14px" }}>
-                      Chưa có quầy nào
+                      Chưa có phòng nào
                     </span>
                   ) : (
                     counters.map((counter) => (

@@ -437,7 +437,7 @@ export default function CounterTable() {
                 </div>
 
                 <div className="admin-form-group">
-                  <label className="admin-form-label">Tên Quầy:</label>
+                  <label className="admin-form-label">Tên Phòng:</label>
                   <input
                     type="text"
                     className="admin-form-input"
@@ -517,7 +517,7 @@ export default function CounterTable() {
               {/* Right Column - Services and Description */}
               <div>
                 <div className="admin-form-group">
-                  <label className="admin-form-label">Dịch Vụ Phục Vụ:</label>
+                  <label className="admin-form-label">Quầy Phục Vụ:</label>
                   <div
                     style={{
                       border: "1px solid #d0d0d0",

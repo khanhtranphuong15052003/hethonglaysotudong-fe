@@ -452,7 +452,16 @@ const [hovered, setHovered] = useState<string | null>(null);
         className="staff-page__content"
         style={{ display: "flex", gap: "clamp(16px, 2vw, 28px)", flex: 1 }}
       >
-        <div className="staff-page__queue" style={{ flex: 0.6, overflowY: "auto", minWidth: 0 }}>
+        <div
+  className="staff-page__queue"
+  style={{
+    flex: 0.6,
+    overflowY: "auto",
+    minWidth: 0,
+    height: "75vh",        // 🔥 fix chiều cao
+    maxHeight: "75vh"
+  }}
+>
           <div style={{ display: "flex", gap: "16px", marginBottom: "clamp(12px, 1.6vh, 18px)", borderBottom: "2px solid #eee" }}>
             <h3
               onClick={() => setActiveTab("waiting")}
@@ -511,7 +520,7 @@ const [hovered, setHovered] = useState<string | null>(null);
             <tbody>
               {activeTab === "waiting" ? (
                 waitingTickets.length > 0 ? (
-                  waitingTickets.map((ticket, index) => (
+                waitingTickets.slice(0, 10).map((ticket, index) => (
                     <tr key={ticket.id} style={{ borderBottom: "1px solid #e0e0e0" }}>
                       <td style={{ padding: "clamp(8px, 0.95vh, 12px) 10px", borderRight: "1px solid #ddd", fontSize: "clamp(14px, 1vw, 18px)" }}>
                         {index + 1}
