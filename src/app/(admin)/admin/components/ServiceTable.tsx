@@ -185,11 +185,11 @@ export default function ServiceTable() {
     if (pendingDeleteId) {
       try {
         await deleteService(pendingDeleteId);
-        success("Xóa dịch vụ thành công");
+        success("Xóa quầy thành công");
         fetchServices();
       } catch (err) {
         const errorMessage =
-          err instanceof Error ? err.message : "Xóa dịch vụ thất bại";
+          err instanceof Error ? err.message : "Xóa quầy thất bại";
         error(errorMessage);
       }
     }
@@ -199,7 +199,7 @@ export default function ServiceTable() {
 
   const handleSave = async () => {
     if (!formData.code || !formData.name) {
-      error("Vui lòng nhập mã và tên dịch vụ");
+      error("Vui lòng nhập mã và tên quầy");
       return;
     }
 
@@ -241,7 +241,7 @@ export default function ServiceTable() {
           );
         }
 
-        success("Cập nhật dịch vụ thành công");
+        success("Cập nhật quầy thành công");
         fetchServices();
         fetchCounters();
         handleCloseModal();
@@ -262,14 +262,14 @@ export default function ServiceTable() {
           ),
         );
 
-        success("Tạo dịch vụ thành công");
+        success("Tạo quầy thành công");
         fetchServices();
         fetchCounters();
         handleCloseModal();
       }
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "Lỗi lưu dịch vụ";
+        err instanceof Error ? err.message : "Lỗi lưu quầy thất bại";
       error(errorMessage);
     }
   };
@@ -320,7 +320,7 @@ export default function ServiceTable() {
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
       <div className="admin-table-header">
         <div className="font-bold text-2xl" style={{ color: "#003366" }}>
-          QUẢN LÝ DỊCH VỤ
+          QUẢN LÝ QUẦY
         </div>
         <div className="admin-table-actions">
           <AdminTableFilter
@@ -334,7 +334,7 @@ export default function ServiceTable() {
             sections={[
               {
                 id: "service-counter",
-                label: "Quầy dịch vụ",
+                label: "Quầy quầy",
                 value: filterCounterId,
                 onChange: setFilterCounterId,
                 options: [
@@ -464,7 +464,7 @@ export default function ServiceTable() {
             ) : (
               <tr>
                 <td colSpan={8} className="admin-table-empty">
-                  Không có dịch vụ nào.
+                  Không có quầy nào.
                 </td>
               </tr>
             )}
@@ -795,7 +795,7 @@ export default function ServiceTable() {
             <p
               style={{ marginBottom: "20px", color: "#666", fontSize: "14px" }}
             >
-              Bạn có chắc chắn muốn chuyển trạng thái dịch vụ thành{" "}
+              Bạn có chắc chắn muốn chuyển trạng thái quầy thành{" "}
               <strong
                 style={{ color: pendingStatusChange ? "#28a745" : "#dc3545" }}
               >
@@ -854,12 +854,12 @@ export default function ServiceTable() {
             }}
           >
             <h3 style={{ marginTop: 0, marginBottom: "20px", color: "#333" }}>
-              Xác Nhận Xóa Dịch Vụ
+              Xác Nhận Xóa Quầy
             </h3>
             <p
               style={{ marginBottom: "20px", color: "#666", fontSize: "14px" }}
             >
-              Bạn có chắc chắn muốn xóa dịch vụ này? Hành động này không thể
+              Bạn có chắc chắn muốn xóa Quầy này? Hành động này không thể
               hoàn tác.
             </p>
             <div

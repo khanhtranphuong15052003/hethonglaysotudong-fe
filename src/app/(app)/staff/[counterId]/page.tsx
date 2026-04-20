@@ -426,7 +426,7 @@ const [hovered, setHovered] = useState<string | null>(null);
                 borderRadius: "4px",
               }}
             >
-              Đang áp dụng giới hạn dịch vụ: {assignedServices.map((s) => s.name).join(", ")}
+              Đang áp dụng giới hạn quầy: {assignedServices.map((s) => s.name).join(", ")}
             </span>
           )}
         </div>
@@ -657,7 +657,7 @@ const [hovered, setHovered] = useState<string | null>(null);
                   <span style={{ color: "#555" }}>{currentTicket.customerName}</span>
                 </div>
                 <div style={{ marginBottom: 12 }}>
-                  <span style={{ fontWeight: 700, color: "#333" }}>Dịch vụ: </span>
+                  <span style={{ fontWeight: 700, color: "#333" }}>Quầy: </span>
                   <span style={{ color: "#555" }}>{currentTicket.serviceName}</span>
                 </div>
               </div>

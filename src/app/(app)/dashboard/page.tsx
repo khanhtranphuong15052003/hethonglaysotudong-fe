@@ -96,17 +96,17 @@ export default function HomePage() {
         >
           <h2 style={{ color: "#28a745", marginBottom: 15 }}>📺 Màn Hình</h2>
           <p style={{ marginBottom: 15, color: "#666" }}>
-            Hiển thị công cộng trước phòng dịch vụ
+            Hiển thị công cộng trước phòng quầy
           </p>
           <div style={{ fontSize: 12, marginBottom: 15 }}>
             <p>
-              Dịch vụ 1: <code>/public/display/1</code>
+              Quầy 1: <code>/public/display/1</code>
             </p>
             <p>
-              Dịch vụ 2: <code>/public/display/2</code>
+              Quầy 2: <code>/public/display/2</code>
             </p>
             <p>
-              Dịch vụ 3: <code>/public/display/3</code>
+              Quầy 3: <code>/public/display/3</code>
             </p>
           </div>
         </div>
@@ -210,7 +210,7 @@ export default function HomePage() {
                 /public/display/[serviceId]
               </td>
               <td style={{ padding: 10, borderBottom: "1px solid #ddd" }}>
-                Màn hình công cộng dịch vụ
+                Màn hình công cộng quầy
               </td>
             </tr>
           </tbody>

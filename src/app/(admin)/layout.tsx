@@ -33,8 +33,9 @@ type NavItem = {
 const navItems: NavItem[] = [
   { href: "/admin", label: "Thống kê", icon: FiActivity },
   { href: "/admin/users", label: "Người dùng", icon: FiUsers },
+   { href: "/admin/counter", label: "Quản lý phòng", icon: FiGrid },
   { href: "/admin/services", label: "Quản lý quầy", icon: FiTool  },
-  { href: "/admin/counter", label: "Quản lý phòng", icon: FiGrid },
+
   { href: "/admin/printers", label: "Máy in", icon: FiPrinter },
   { href: "/admin/settings", label: "Cài đặt", icon: FiSettings },
 ];

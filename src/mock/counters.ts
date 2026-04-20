@@ -21,7 +21,7 @@ export const counters: Counter[] = [
     counterId: "counter-2",
     name: "Quầy 2",
     serviceId: "2,6",
-    serviceName: "Nhận kết quả, Dịch vụ khác",
+    serviceName: "Nhận kết quả, Quầy khác",
     status: "active",
   },
   {

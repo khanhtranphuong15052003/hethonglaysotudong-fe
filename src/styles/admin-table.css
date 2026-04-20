@@ -874,3 +874,91 @@ table.admin-table td {
     width: 100%;
   }
 }
+.admin-modal-content {
+  max-width: 900px;
+  width: 95%;
+}
+
+/* GRID 2 CỘT */
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 5px;
+}
+
+.admin-form-left,
+.admin-form-right {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* SERVICE LIST */
+.admin-service-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-service-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #f9f9f9;
+  cursor: pointer;
+}
+
+.admin-service-item.active {
+  background: #e8f0fe;
+  border: 1px solid #4a7fd4;
+}
+
+.service-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #003366;
+}
+
+.service-code {
+  font-size: 12px;
+  color: #888;
+}
+
+/* TEXT STYLE */
+.admin-form-hint {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.admin-note {
+  padding: 10px 12px;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #92400e;
+}
+
+.admin-error {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #dc2626;
+}
+
+.admin-empty {
+  font-size: 14px;
+  color: #999;
+  font-style: italic;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .admin-form-grid {
+    grid-template-columns: 1fr;
+  }
+}

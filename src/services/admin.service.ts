@@ -98,7 +98,7 @@ export async function createService(
   });
   const data = await parseJsonResponse<{ success: boolean; data: Service; message?: string }>(response);
   if (data.success) return data.data;
-  throw new Error(data.message || "Lỗi tạo dịch vụ");
+  throw new Error(data.message || "Lỗi tạo quầy");
 }
 
 export async function updateService(
@@ -112,7 +112,7 @@ export async function updateService(
   });
   const data = await parseJsonResponse<{ success: boolean; data: Service; message?: string }>(response);
   if (data.success) return data.data;
-  throw new Error(data.message || "Lỗi cập nhật dịch vụ");
+  throw new Error(data.message || "Lỗi cập nhật quầy");
 }
 
 // ==================== COUNTERS ====================
@@ -202,7 +202,7 @@ export async function deleteService(id: string): Promise<void> {
   });
   const data = await response.json();
   if (!data.success) {
-    throw new Error(data.message || "Lỗi xóa dịch vụ");
+    throw new Error(data.message || "Lỗi xóa quầy");
   }
 }
 
@@ -320,7 +320,32 @@ export interface Printer {
   lastTestStatus?: "success" | "failed" | "pending";
   services: string[];
 }
+export async function updateStaff(
+  id: string,
+  staffData: UpdateStaffPayload,
+): Promise<Staff> {
+  const response = await fetch(`${API_BASE}/admin/users/staff/${id}`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(staffData),
+  });
 
+  const data = await response.json();
+
+  if (data.success) return data.data;
+
+  // 👇 đoạn này bạn viết OK rồi
+  if (Array.isArray(data.errors) && data.errors.length > 0) {
+    const errorMessages = data.errors
+      .map((err: { field?: string; message?: string }) =>
+        err.message || err.field || "Lỗi không xác định"
+      )
+      .join("; ");
+    throw new Error(errorMessages);
+  }
+
+  throw new Error(data.message || "Lỗi cập nhật nhân viên");
+}
 export async function getPrinters(): Promise<Printer[]> {
   try {
     const response = await fetch(`${API_BASE}/printers`, {
@@ -385,6 +410,16 @@ export interface StaffServiceInfo {
   displayOrder?: number;
   isActive?: boolean;
 }
+   
+
+export type UpdateStaffPayload = {
+  fullName?: string;
+  isActive?: boolean;
+  password?: string;
+  counterId?: string | null; // 👈 QUAN TRỌNG
+};
+
+
 
 export interface Staff {
   _id: string;
@@ -444,28 +479,7 @@ export async function createStaff(
   throw new Error(data.message || "Lỗi tạo nhân viên");
 }
 
-export async function updateStaff(
-  id: string,
-  staffData: Partial<Omit<Staff, "_id" | "role">>,
-): Promise<Staff> {
-  const response = await fetch(`${API_BASE}/admin/users/staff/${id}`, {
-    method: "PUT",
-    headers: getAuthHeaders(),
-    body: JSON.stringify(staffData),
-  });
-  const data = await response.json();
-  if (data.success) return data.data;
 
-  // Trích xuất thông báo lỗi cụ thể từ mảng errors (validation errors)
-  if (Array.isArray(data.errors) && data.errors.length > 0) {
-    const errorMessages = data.errors
-      .map((err: { field?: string; message?: string }) => err.message || err.field || "Lỗi không xác định")
-      .join("; ");
-    throw new Error(errorMessages);
-  }
-
-  throw new Error(data.message || "Lỗi cập nhật nhân viên");
-}
 
 export async function deleteStaff(id: string): Promise<void> {
   const response = await fetch(`${API_BASE}/admin/users/staff/${id}`, {
@@ -521,7 +535,7 @@ export async function addServicesToCounter(
   });
   const data = await response.json();
   if (data.success) return data.data;
-  throw new Error(data.message || "Lỗi thêm dịch vụ vào quầy");
+  throw new Error(data.message || "Lỗi thêm quầy vào quầy");
 }
 
 export async function removeServiceFromCounter(
@@ -537,7 +551,7 @@ export async function removeServiceFromCounter(
   );
   const data = await response.json();
   if (data.success) return data.data;
-  throw new Error(data.message || "Lỗi xóa dịch vụ khỏi quầy");
+  throw new Error(data.message || "Lỗi xóa quầy khỏi quầy");
 }
 
 // ==================== STAFF SERVICE ASSIGNMENT ====================
@@ -555,11 +569,11 @@ export async function getStaffServices(staffId: string): Promise<StaffServicesRe
     headers: getAuthHeaders(),
   });
   if (!response.ok) {
-    throw new Error(`404: API gán dịch vụ chưa được deploy (GET /staff/${staffId}/services trả ${response.status})`);
+    throw new Error(`404: API gán quầy chưa được deploy (GET /staff/${staffId}/services trả ${response.status})`);
   }
   const data = await response.json();
   if (data.success) return data.data;
-  throw new Error(data.message || "Lỗi lấy thông tin dịch vụ nhân viên");
+  throw new Error(data.message || "Lỗi lấy thông tin quầy nhân viên");
 }
 
 export async function updateStaffServices(
@@ -572,9 +586,9 @@ export async function updateStaffServices(
     body: JSON.stringify({ serviceIds }),
   });
   if (!response.ok) {
-    throw new Error(`404: API gán dịch vụ chưa được deploy (PUT /staff/${staffId}/services trả ${response.status})`);
+    throw new Error(`404: API gán quầy chưa được deploy (PUT /staff/${staffId}/services trả ${response.status})`);
   }
   const data = await response.json();
   if (data.success) return data.data;
-  throw new Error(data.message || "Lỗi cập nhật dịch vụ nhân viên");
+  throw new Error(data.message || "Lỗi cập nhật quầy nhân viên");
 }

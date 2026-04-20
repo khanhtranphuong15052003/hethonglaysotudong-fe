@@ -188,7 +188,7 @@ function ServiceTicketContent() {
   if (!service) {
     return (
       <div style={{ padding: 20 }}>
-        <p>Dịch vụ không tồn tại</p>
+        <p>Quầy không tồn tại</p>
         <Link href="/">
           <button style={{ padding: 10, fontSize: 16 }}>Quay lại</button>
         </Link>

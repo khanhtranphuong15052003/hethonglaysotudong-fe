@@ -301,7 +301,7 @@ function ServiceTable({ services }: { services: DashboardReportService[] }) {
     <div className={styles.tablePanel}>
       <div className={styles.tableHeader}>
         <div>
-          <h3 className={styles.panelTitle}>Hiệu suất theo dịch vụ</h3>
+          <h3 className={styles.panelTitle}>Hiệu suất theo quầy</h3>
           <div className={styles.muted}>
             Theo dõi lưu lượng, xử lý và hàng chờ hiện tại của từng nghiệp vụ.
           </div>
@@ -514,7 +514,7 @@ export default function AdminDashboard() {
               icon={<FiLayers />}
               label="Tổng hàng chờ"
               value={formatUnit(overview.summary.totalWaiting, "vé")}
-              hint={`${formatNumber(overview.summary.totalServices)} dịch vụ đang hoạt động`}
+              hint={`${formatNumber(overview.summary.totalServices)} quầy đang hoạt động`}
             />
             <MetricCard
               icon={<FiActivity />}
@@ -632,9 +632,9 @@ export default function AdminDashboard() {
           <div className={styles.panel}>
             <div className={styles.panelHead}>
               <div>
-                <h2 className={styles.panelTitle}>Tải chờ theo dịch vụ</h2>
+                <h2 className={styles.panelTitle}>Tải chờ theo quầy</h2>
                 <div className={styles.muted}>
-                  Doughnut chart thể hiện tổng chờ và đang xử lý của từng dịch vụ.
+                  Doughnut chart thể hiện tổng chờ và đang xử lý của từng quầy.
                 </div>
               </div>
               <span className={styles.chip}>

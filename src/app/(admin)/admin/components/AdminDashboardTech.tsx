@@ -291,7 +291,7 @@ function ServiceTable({ services }: { services: DashboardReportService[] }) {
     <div className={styles.tablePanel}>
       <div className={styles.tableHeader}>
         <div>
-          <h3 className={styles.panelTitle}>Hiệu suất theo dịch vụ</h3>
+          <h3 className={styles.panelTitle}>Hiệu suất theo quầy</h3>
           <div className={styles.muted}>
             Theo dõi lưu lượng, xử lý và hàng chờ hiện tại của từng nghiệp vụ.
           </div>
@@ -557,7 +557,7 @@ export default function AdminDashboardTech() {
           </div>
 
           <div className={styles.statGrid}>
-            <MetricCard icon={<FiLayers />} label="Tổng hàng chờ" value={formatUnit(overview.summary.totalWaiting, "vé")} hint={`${formatUnit(overview.summary.totalServices, "dịch vụ")} đang hoạt động`} />
+            <MetricCard icon={<FiLayers />} label="Tổng hàng chờ" value={formatUnit(overview.summary.totalWaiting, "vé")} hint={`${formatUnit(overview.summary.totalServices, "quầy")} đang hoạt động`} />
             <MetricCard icon={<FiActivity />} label="Đang xử lý" value={formatUnit(overview.summary.totalProcessing, "vé")} hint={`${formatUnit(overview.summary.activeCounters, "quầy")} đang mở`} />
             <MetricCard icon={<FiCheckCircle />} label="Hoàn tất hôm nay" value={formatUnit(overview.summary.ticketsCompletedToday, "vé")} hint={`${formatUnit(overview.summary.ticketsIssuedToday, "vé")} phát hành hôm nay`} />
             <MetricCard icon={<FiClock />} label="Thời gian xử lý TB" value={formatMinutes(overview.summary.averageHandleTimeInMinutes)} hint={`${formatUnit(overview.summary.assignedStaff, "nhân sự")}/${formatUnit(overview.summary.totalStaff, "nhân sự")} đã gán quầy`} />
@@ -622,8 +622,8 @@ export default function AdminDashboardTech() {
           <div className={styles.panel}>
             <div className={styles.panelHead}>
               <div>
-                <h2 className={styles.panelTitle}>Tải chờ theo dịch vụ</h2>
-                <div className={styles.muted}>Tổng chờ và đang xử lý của từng dịch vụ.</div>
+                <h2 className={styles.panelTitle}>Tải chờ theo quầy</h2>
+                <div className={styles.muted}>Tổng chờ và đang xử lý của từng quầy.</div>
               </div>
               <span className={styles.chip}>{formatUnit(overview.summary.totalWaiting, "hồ sơ")}</span>
             </div>

@@ -238,7 +238,7 @@ export default function WaitingPage() {
                 <th style={{ padding: "12px 10px", width: "8%" }}>STT</th>
                 <th style={{ padding: "12px 10px", width: "18%" }}>Số phiếu</th>
                 <th style={{ padding: "12px 10px", width: "34%" }}>Họ tên</th>
-                <th style={{ padding: "12px 10px" }}>Dịch vụ</th>
+                <th style={{ padding: "12px 10px" }}>Quầy</th>
                 <th style={{ padding: "12px 10px", width: "16%" }}>Trạng thái</th>
               </tr>
             </thead>

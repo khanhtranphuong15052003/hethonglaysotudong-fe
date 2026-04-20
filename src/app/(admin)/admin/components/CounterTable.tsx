@@ -144,7 +144,7 @@ export default function CounterTable() {
     }
 
     if (selectedServices.length === 0) {
-      error("Vui lòng chọn ít nhất một dịch vụ");
+      error("Vui lòng chọn ít nhất một quầy");
       return;
     }
 
@@ -167,7 +167,7 @@ export default function CounterTable() {
           ),
         );
 
-        // Đồng bộ danh sách dịch vụ sau khi cập nhật thông tin quầy
+        // Đồng bộ danh sách quầy sau khi cập nhật thông tin quầy
         await addServicesToCounter(editingId, selectedServices);
         success("Cập nhật quầy thành công");
         fetchCounters();
@@ -256,11 +256,11 @@ export default function CounterTable() {
             sections={[
               {
                 id: "counter-service",
-                label: "Dịch vụ",
+                label: "Quầy",
                 value: filterServiceId,
                 onChange: setFilterServiceId,
                 options: [
-                  { label: "Tất cả dịch vụ", value: "all" },
+                  { label: "Tất cả quầy", value: "all" },
                   ...[...services]
                     .sort(
                       (a, b) =>

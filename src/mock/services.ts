@@ -70,9 +70,9 @@ export const services: Service[] = [
   },
   {
     _id: "6",
-    name: "Dịch vụ khác",
+    name: "Quầy khác",
     code: "F",
-    description: "Các dịch vụ khác",
+    description: "Các quầy khác",
     displayOrder: 6,
     prefixNumber: 0,
     counterId: "counter-2",

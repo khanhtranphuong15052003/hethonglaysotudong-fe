@@ -58,7 +58,28 @@ export default function StaffTable() {
     counterId: null as string | null,
     isActive: true,
   });
+////const parse errors
+const parseApiError = (err: any): string => {
+  // axios style
+  const data = err?.response?.data;
 
+  if (!data) return err.message || "Lỗi không xác định";
+
+  // 1. Nếu có errors detail
+  if (data.errors) {
+    const firstErrorKey = Object.keys(data.errors)[0];
+    const firstError = data.errors[firstErrorKey];
+
+    if (typeof firstError === "string") return firstError;
+    if (firstError?.message) return firstError.message;
+  }
+
+  // 2. fallback message
+  if (data.message) return data.message;
+
+  return "Lỗi không xác định";
+};
+/////////////////////////////////////
   const fetchStaff = useCallback(async () => {
     setLoading(true);
     try {
@@ -179,53 +200,110 @@ export default function StaffTable() {
       : null;
 
     try {
-      if (editingId) {
-        // === EDIT MODE: update info + counter + services ===
-        const payload: {
-          fullName: string;
-          isActive: boolean;
-          password?: string;
-        } = {
-          fullName: formData.fullName,
-          isActive: formData.isActive,
-        };
-        if (formData.password) {
-          payload.password = formData.password;
-        }
-        savedStaff = await updateStaff(editingId, payload);
-        if (formData.counterId !== previousCounterId) {
-          savedStaff = await assignCounterToStaff(editingId, formData.counterId);
-        }
-        // Gán dịch vụ chỉ trong edit mode (staff đã có quầy trong DB)
-        if (formData.counterId) {
-          try {
-            await updateStaffServices(savedStaff._id, Array.from(formSelectedServiceIds));
-          } catch (svcErr) {
-            const svcMsg = svcErr instanceof Error ? svcErr.message : "";
-            console.warn("Gán dịch vụ thất bại:", svcMsg);
-          }
-        }
-        success("Cập nhật thành công");
-      } else {
-        // === CREATE MODE: chỉ tạo staff + gán quầy, KHÔNG gán dịch vụ ===
-        // (BE yêu cầu staff phải được lưu với quầy trong DB trước, sau đó vào Edit mới gán dịch vụ)
-        savedStaff = await createStaff({
-          username: formData.username,
-          password: formData.password,
-          fullName: formData.fullName,
-        });
-        if (formData.counterId) {
-          savedStaff = await assignCounterToStaff(savedStaff._id, formData.counterId);
-        }
-        success("Tạo nhân viên thành công" + (formData.counterId ? ". Vào Sửa để gán dịch vụ cho nhân viên." : ""));
-      }
-    } catch (err) {
-      await fetchStaff();
-      const errorMessage =
-        err instanceof Error ? err.message : "Lưu thông tin thất bại";
-      error(errorMessage);
-      return;
+     if (editingId) {
+  // ===== BUILD PAYLOAD =====
+  const payload: {
+    fullName: string;
+    isActive: boolean;
+    password?: string;
+    counterId?: string | null;
+  } = {
+    fullName: formData.fullName,
+    isActive: formData.isActive,
+  };
+
+  if (formData.password) {
+    payload.password = formData.password;
+  }
+
+  // ✅ xử lý phòng (quan trọng nhất)
+if (formData.counterId !== previousCounterId) {
+  if (formData.counterId) {
+    // có phòng → assign API
+    savedStaff = await assignCounterToStaff(
+      editingId,
+      formData.counterId
+    );
+  } else {
+    // bỏ phòng → update trực tiếp
+    savedStaff = await updateStaff(editingId, {
+      fullName: formData.fullName,
+      isActive: formData.isActive,
+      counterId: null,
+    });
+  }
+}
+  // ===== UPDATE 1 LẦN DUY NHẤT =====
+ savedStaff = await updateStaff(editingId, {
+  fullName: formData.fullName,
+  isActive: formData.isActive,
+  counterId: formData.counterId,
+});
+
+  // ===== GÁN QUẦY =====
+  if (formData.counterId) {
+    try {
+      await updateStaffServices(
+        savedStaff._id,
+        Array.from(formSelectedServiceIds)
+      );
+    } catch (svcErr) {
+      const msg = svcErr instanceof Error ? svcErr.message : "";
+      console.warn("Gán quầy thất bại:", msg);
     }
+  } else {
+    // ✅ nếu bỏ phòng → reset luôn quầy
+    setFormSelectedServiceIds(new Set());
+  }
+
+  success("Cập nhật thành công");
+} else {
+
+  // ===== CREATE MODE =====
+  savedStaff = await createStaff({
+    username: formData.username,
+    password: formData.password,
+    fullName: formData.fullName,
+  });
+
+  if (formData.counterId) {
+    // 1. Gán phòng
+    savedStaff = await assignCounterToStaff(
+      savedStaff._id,
+      formData.counterId
+    );
+
+    // tránh BE chưa kịp cập nhật
+    await new Promise((r) => setTimeout(r, 200));
+
+    // 2. Gán quầy
+    if (formSelectedServiceIds.size > 0) {
+      try {
+        await updateStaffServices(
+          savedStaff._id,
+          Array.from(formSelectedServiceIds)
+        );
+      } catch (svcErr) {
+        const msg = svcErr instanceof Error ? svcErr.message : "";
+        console.warn("Gán quầy khi tạo lỗi:", msg);
+
+        error("Tạo thành công nhưng gán quầy thất bại");
+      }
+    }
+  }
+
+  success("Tạo nhân viên thành công");
+}
+
+
+} catch (err) {
+  await fetchStaff();
+
+const errorMessage = parseApiError(err);
+error(errorMessage);
+
+  return;
+}
 
     handleCloseModal();
     await fetchStaff();
@@ -254,7 +332,7 @@ export default function StaffTable() {
       setSelectedServiceIds(initialSelectedServiceIds);
       setServiceRestrictionConfigured(Boolean(staff.serviceRestrictionConfigured));
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Lỗi tải dịch vụ";
+      const msg = err instanceof Error ? err.message : "Lỗi tải quầy";
       error(msg);
       setShowServiceModal(false);
     } finally {
@@ -304,14 +382,14 @@ export default function StaffTable() {
     setServiceModalSaving(true);
     try {
       await updateStaffServices(serviceModalStaff._id, Array.from(selectedServiceIds));
-      success("Cập nhật dịch vụ thành công");
+      success("Cập nhật quầy thành công");
       setShowServiceModal(false);
       fetchStaff();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Lỗi lưu dịch vụ";
+      const msg = err instanceof Error ? err.message : "Lỗi lưu quầy";
       const is404 = msg.includes("404") || msg.toLowerCase().includes("not found");
       if (is404) {
-        error("API gán dịch vụ trả 404 — route chưa được deploy trên server. Vui lòng kiểm tra backend.");
+        error("API gán quầy trả 404 — route chưa được deploy trên server. Vui lòng kiểm tra backend.");
       } else {
         error(msg);
       }
@@ -454,7 +532,7 @@ export default function StaffTable() {
                       )}
                     </div>
                   ) : staff.serviceRestrictionConfigured ? (
-                    <span style={{ color: '#dc3545', fontSize: '0.9em' }}>Không có dịch vụ</span>
+                    <span style={{ color: '#dc3545', fontSize: '0.9em' }}>Không có quầy</span>
                   ) : (
                     <span style={{ color: '#999', fontStyle: 'italic', fontSize: '0.9em' }}>Chưa cấu hình</span>
                   )}
@@ -474,7 +552,7 @@ export default function StaffTable() {
                       className="table-action-btn"
                       style={{ background: "transparent", color: "#000", border: "none" }}
                       onClick={() => handleOpenServiceModal(staff)}
-                      title="Phân quyền dịch vụ"
+                      title="Phân quyền quầy"
                       disabled={!staff.counterId}
                     >
                       <FiRepeat size={16} color="#000" />
@@ -502,108 +580,163 @@ export default function StaffTable() {
         <span>Tổng cộng: {filteredStaff.length} nhân viên (Trang {currentPage}/{totalPages})</span>
       </div>
 
-      {showModal && (
-        <div className="admin-modal">
-          <div className="admin-modal-content">
-            <button className="admin-modal-close" onClick={handleCloseModal}>✕</button>
-            <h3>{editingId ? "Chỉnh Sửa Nhân Viên" : "Thêm Nhân Viên Mới"}</h3>
+    {showModal && (
+  <div className="admin-modal">
+    <div className="admin-modal-content">
+      <button className="admin-modal-close" onClick={handleCloseModal}>✕</button>
+      <h3>{editingId ? "Chỉnh Sửa Nhân Viên" : "Thêm Nhân Viên Mới"}</h3>
 
-            <div className="admin-form-group">
-              <label className="admin-form-label">Tên đăng nhập:</label>
-              <input type="text" className="admin-form-input" value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} disabled={!!editingId} />
-            </div>
-            <div className="admin-form-group">
-              <label className="admin-form-label">Mật khẩu:</label>
-              <input type="password" className="admin-form-input" placeholder={editingId ? "Để trống nếu không đổi mật khẩu" : ""} value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
-            </div>
-            <div className="admin-form-group">
-              <label className="admin-form-label">Họ và tên:</label>
-              <input type="text" className="admin-form-input" value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} />
-            </div>
-            <div className="admin-form-group">
-              <label className="admin-form-label">Gán phòng:</label>
-              <select className="admin-form-input" value={formData.counterId || ""} onChange={(e) => handleFormCounterChange(e.target.value || null)}>
-                <option value="">Không gán</option>
-                {counters.map(c => <option key={c._id} value={c._id}>{c.name} ({c.code})</option>)}
-              </select>
-              <div style={{ marginTop: 8, fontSize: 13, color: "#6b7280" }}>
-                Sau khi lưu gán phòng, hệ thống sẽ chuyển sang bước chọn dịch vụ áp dụng cho nhân viên.
-              </div>
-            </div>
-            {/* Gán dịch vụ chỉ hiển thị trong Edit mode */}
-            {formData.counterId && editingId && (
-              <div className="admin-form-group">
-                <label className="admin-form-label">Dịch vụ áp dụng cho nhân viên</label>
-                {formAvailableServices.length === 0 ? (
-                  <div style={{ color: "#999", fontStyle: "italic", fontSize: 14 }}>
-                    Phòng này chưa có dịch vụ nào.
-                  </div>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    {formAvailableServices.map((service) => {
-                      const id = service.id || service._id;
-                      const checked = formSelectedServiceIds.has(id);
-                      return (
-                        <label
-                          key={id}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 10,
-                            cursor: "pointer",
-                            padding: "10px 12px",
-                            borderRadius: 8,
-                            background: checked ? "#e8f0fe" : "#f9fafb",
-                            border: `1px solid ${checked ? "#4a7fd4" : "#d1d5db"}`,
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => handleToggleFormService(id)}
-                            style={{ width: 16, height: 16 }}
-                          />
-                          <div>
-                            <div style={{ fontWeight: 700, fontSize: 14, color: "#003366" }}>
-                              {service.name}
-                            </div>
-                            <div style={{ fontSize: 12, color: "#6b7280" }}>
-                              {service.code}
-                            </div>
-                          </div>
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-                {formAvailableServices.length > 0 && formSelectedServiceIds.size === 0 && (
-                  <div style={{ marginTop: 8, color: "#dc2626", fontSize: 13 }}>
-                    Không chọn dịch vụ nào.
-                  </div>
-                )}
-              </div>
-            )}
-            {/* Trong Create mode: hiện note hướng dẫn */}
-            {formData.counterId && !editingId && (
-              <div style={{ marginTop: 4, padding: "10px 14px", background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 8, fontSize: 13, color: "#92400e" }}>
-                💡 Sau khi tạo xong, vào <strong>Sửa</strong> để chọn dịch vụ áp dụng cho nhân viên này.
-              </div>
-            )}
-            <div className="admin-form-group">
-              <label>
-                <input type="checkbox" checked={formData.isActive} onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })} />
-                {" "}Kích hoạt tài khoản
-              </label>
-            </div>
+      <div className="admin-form-grid">
+        {/* ===== LEFT COLUMN ===== */}
+        <div className="admin-form-left">
+          <div className="admin-form-group">
+            <label className="admin-form-label">Tên đăng nhập:</label>
+            <input
+              type="text"
+              className="admin-form-input"
+              value={formData.username}
+              onChange={(e) =>
+                setFormData({ ...formData, username: e.target.value })
+              }
+              disabled={!!editingId}
+            />
+          </div>
 
-            <div className="admin-form-actions">
-              <button className="submit" onClick={handleSave}>Lưu</button>
-              <button className="cancel" onClick={handleCloseModal}>Hủy</button>
-            </div>
+          <div className="admin-form-group">
+            <label className="admin-form-label">Mật khẩu:</label>
+            <input
+              type="password"
+              className="admin-form-input"
+              placeholder={editingId ? "Để trống nếu không đổi mật khẩu" : ""}
+              value={formData.password}
+              onChange={(e) =>
+                setFormData({ ...formData, password: e.target.value })
+              }
+            />
+          </div>
+
+          <div className="admin-form-group">
+            <label className="admin-form-label">Họ và tên:</label>
+            <input
+              type="text"
+              className="admin-form-input"
+              value={formData.fullName}
+              onChange={(e) =>
+                setFormData({ ...formData, fullName: e.target.value })
+              }
+            />
           </div>
         </div>
-      )}
 
+        {/* ===== RIGHT COLUMN ===== */}
+        <div className="admin-form-right">
+          <div className="admin-form-group">
+            <label className="admin-form-label">Gán phòng:</label>
+            <select
+              className="admin-form-input"
+              value={formData.counterId || ""}
+              onChange={(e) =>
+                handleFormCounterChange(e.target.value || null)
+              }
+            >
+              <option value="">Không gán</option>
+              {counters.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.name} ({c.code})
+                </option>
+              ))}
+            </select>
+
+            <div className="admin-form-hint">
+              Sau khi lưu gán phòng, hệ thống sẽ chuyển sang bước chọn quầy.
+            </div>
+          </div>
+
+          {/* ===== SERVICES (EDIT MODE) ===== */}
+         {formData.counterId && (
+            <div className="admin-form-group">
+              <label className="admin-form-label">
+                Quầy áp dụng cho nhân viên
+              </label>
+
+              {formAvailableServices.length === 0 ? (
+                <div className="admin-empty">
+                  Phòng này chưa có quầy nào.
+                </div>
+              ) : (
+                <div className="admin-service-list">
+                  {formAvailableServices.map((service) => {
+                    const id = service.id || service._id;
+                    const checked = formSelectedServiceIds.has(id);
+
+                    return (
+                      <label
+                        key={id}
+                        className={`admin-service-item ${
+                          checked ? "active" : ""
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => handleToggleFormService(id)}
+                        />
+                        <div>
+                          <div className="service-name">
+                            {service.name}
+                          </div>
+                          <div className="service-code">
+                            {service.code}
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+
+              {formAvailableServices.length > 0 &&
+                formSelectedServiceIds.size === 0 && (
+                  <div className="admin-error">
+                    Không chọn quầy nào.
+                  </div>
+                )}
+            </div>
+          )}
+
+          {/* ===== CREATE MODE NOTE ===== */}
+    
+
+          <div className="admin-form-group">
+            <label>
+              <input
+                type="checkbox"
+                checked={formData.isActive}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    isActive: e.target.checked,
+                  })
+                }
+              />
+              {" "}Kích hoạt tài khoản
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {/* ===== ACTIONS ===== */}
+      <div className="admin-form-actions">
+        <button className="submit" onClick={handleSave}>
+          Lưu
+        </button>
+        <button className="cancel" onClick={handleCloseModal}>
+          Hủy
+        </button>
+      </div>
+    </div>
+  </div>
+)}
       {showDeleteConfirm && (
         <div className="admin-modal">
           <div style={{ background: "white", borderRadius: "8px", padding: "30px", maxWidth: "400px", textAlign: "center" }}>
@@ -624,23 +757,23 @@ export default function StaffTable() {
         <div className="admin-modal">
           <div className="admin-modal-content" style={{ maxWidth: 480 }}>
             <button className="admin-modal-close" onClick={() => setShowServiceModal(false)}>✕</button>
-            <h3>Phân quyền dịch vụ - {serviceModalStaff.fullName}</h3>
+            <h3>Phân quyền quầy - {serviceModalStaff.fullName}</h3>
             {!serviceModalStaff.counterId && (
               <p style={{ color: '#856404', background: '#fff3cd', padding: '8px 12px', borderRadius: 6, fontSize: 14 }}>
                 Nhân viên chưa được gán phòng, vui lòng gán phòng trước.
               </p>
             )}
             {serviceModalLoading ? (
-              <p style={{ color: '#666', textAlign: 'center', padding: 20 }}>Đang tải dịch vụ...</p>
+              <p style={{ color: '#666', textAlign: 'center', padding: 20 }}>Đang tải quầy...</p>
             ) : (
               <>
                 <p style={{ fontSize: 13, color: '#555', marginBottom: 12 }}>
                   {serviceRestrictionConfigured
-                    ? 'Nhân viên đang áp dụng giới hạn dịch vụ riêng. Hãy chọn rõ dịch vụ nào được áp dụng cho nhân viên này.'
-                    : 'Chưa cấu hình — nhân viên đang xử lý tất cả dịch vụ của phòng.'}
+                    ? 'Nhân viên đang áp dụng giới hạn quầy riêng. Hãy chọn rõ quầy nào được áp dụng cho nhân viên này.'
+                    : 'Chưa cấu hình — nhân viên đang xử lý tất cả quầy của phòng.'}
                 </p>
                 {availableServices.length === 0 ? (
-                  <p style={{ color: '#999', fontStyle: 'italic' }}>Phòng không có dịch vụ nào.</p>
+                  <p style={{ color: '#999', fontStyle: 'italic' }}>Phòng không có quầy nào.</p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
                     {availableServices.map((svc) => {
@@ -663,11 +796,7 @@ export default function StaffTable() {
                     })}
                   </div>
                 )}
-                {selectedServiceIds.size === 0 && availableServices.length > 0 && (
-                  <p style={{ color: '#dc3545', fontSize: 13, marginBottom: 10 }}>
-                    ⚠️ Không chọn dịch vụ nào.
-                  </p>
-                )}
+               
                 <div className="admin-form-actions">
                   <button className="submit" onClick={handleSaveServices} disabled={serviceModalSaving}>
                     {serviceModalSaving ? 'Đang lưu...' : 'Lưu'}
