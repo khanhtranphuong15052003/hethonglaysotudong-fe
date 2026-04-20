@@ -378,12 +378,12 @@ export default function StaffTable() {
             sections={[
               {
                 id: "staff-counter",
-                label: "Quầy trực",
+                label: "Phòng trực",
                 value: filterCounterId,
                 onChange: setFilterCounterId,
                 options: [
-                  { label: "Tất cả quầy", value: "all" },
-                  { label: "Chưa gán quầy", value: "unassigned" },
+                  { label: "Tất cả phòng", value: "all" },
+                  { label: "Chưa gán phòng", value: "unassigned" },
                   ...[...counters]
                     .sort((a, b) => a.number - b.number)
                     .map((counter) => ({
@@ -426,10 +426,10 @@ export default function StaffTable() {
             <tr>
               <th>Tên đăng nhập</th>
               <th>Họ và tên</th>
+              <th>Phòng trực</th>
               <th>Quầy trực</th>
-              <th>Dịch vụ được phép</th>
               <th>Trạng thái</th>
-              <th>Đăng nhập lần cuối</th>
+              <th>Đăng nhập</th>
               <th>Hành động</th>
             </tr>
           </thead>
@@ -521,22 +521,22 @@ export default function StaffTable() {
               <input type="text" className="admin-form-input" value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} />
             </div>
             <div className="admin-form-group">
-              <label className="admin-form-label">Gán quầy:</label>
+              <label className="admin-form-label">Gán phòng:</label>
               <select className="admin-form-input" value={formData.counterId || ""} onChange={(e) => handleFormCounterChange(e.target.value || null)}>
                 <option value="">Không gán</option>
                 {counters.map(c => <option key={c._id} value={c._id}>{c.name} ({c.code})</option>)}
               </select>
               <div style={{ marginTop: 8, fontSize: 13, color: "#6b7280" }}>
-                Sau khi lưu gán quầy, hệ thống sẽ chuyển sang bước gán dịch vụ cho nhân viên.
+                Sau khi lưu gán phòng, hệ thống sẽ chuyển sang bước chọn dịch vụ áp dụng cho nhân viên.
               </div>
             </div>
             {/* Gán dịch vụ chỉ hiển thị trong Edit mode */}
             {formData.counterId && editingId && (
               <div className="admin-form-group">
-                <label className="admin-form-label">Dịch vụ được phép</label>
+                <label className="admin-form-label">Dịch vụ áp dụng cho nhân viên</label>
                 {formAvailableServices.length === 0 ? (
                   <div style={{ color: "#999", fontStyle: "italic", fontSize: 14 }}>
-                    Quầy này chưa có dịch vụ nào.
+                    Phòng này chưa có dịch vụ nào.
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -578,7 +578,7 @@ export default function StaffTable() {
                 )}
                 {formAvailableServices.length > 0 && formSelectedServiceIds.size === 0 && (
                   <div style={{ marginTop: 8, color: "#dc2626", fontSize: 13 }}>
-                    Không chọn quầy nào.
+                    Không chọn dịch vụ nào.
                   </div>
                 )}
               </div>
@@ -586,7 +586,7 @@ export default function StaffTable() {
             {/* Trong Create mode: hiện note hướng dẫn */}
             {formData.counterId && !editingId && (
               <div style={{ marginTop: 4, padding: "10px 14px", background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 8, fontSize: 13, color: "#92400e" }}>
-                💡 Sau khi tạo xong, vào <strong>Sửa</strong> để gán dịch vụ cho nhân viên này.
+                💡 Sau khi tạo xong, vào <strong>Sửa</strong> để chọn dịch vụ áp dụng cho nhân viên này.
               </div>
             )}
             <div className="admin-form-group">
@@ -627,7 +627,7 @@ export default function StaffTable() {
             <h3>Phân quyền dịch vụ - {serviceModalStaff.fullName}</h3>
             {!serviceModalStaff.counterId && (
               <p style={{ color: '#856404', background: '#fff3cd', padding: '8px 12px', borderRadius: 6, fontSize: 14 }}>
-                Nhân viên chưa được gán quầy, vui lòng gán quầy trước.
+                Nhân viên chưa được gán phòng, vui lòng gán phòng trước.
               </p>
             )}
             {serviceModalLoading ? (
@@ -636,11 +636,11 @@ export default function StaffTable() {
               <>
                 <p style={{ fontSize: 13, color: '#555', marginBottom: 12 }}>
                   {serviceRestrictionConfigured
-                    ? 'Nhân viên đang áp dụng giới hạn dịch vụ riêng.'
-                    : 'Chưa cấu hình — nhân viên đang xử lý tất cả dịch vụ của quầy.'}
+                    ? 'Nhân viên đang áp dụng giới hạn dịch vụ riêng. Hãy chọn rõ dịch vụ nào được áp dụng cho nhân viên này.'
+                    : 'Chưa cấu hình — nhân viên đang xử lý tất cả dịch vụ của phòng.'}
                 </p>
                 {availableServices.length === 0 ? (
-                  <p style={{ color: '#999', fontStyle: 'italic' }}>Quầy không có dịch vụ nào.</p>
+                  <p style={{ color: '#999', fontStyle: 'italic' }}>Phòng không có dịch vụ nào.</p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
                     {availableServices.map((svc) => {
@@ -665,7 +665,7 @@ export default function StaffTable() {
                 )}
                 {selectedServiceIds.size === 0 && availableServices.length > 0 && (
                   <p style={{ color: '#dc3545', fontSize: 13, marginBottom: 10 }}>
-                    ⚠️ Không chọn quầy.
+                    ⚠️ Không chọn dịch vụ nào.
                   </p>
                 )}
                 <div className="admin-form-actions">

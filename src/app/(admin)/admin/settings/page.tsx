@@ -87,7 +87,7 @@ export default function SettingsPage() {
               color: "#003366",
             }}
           >
-            Cài đặt
+            Thiết lặp chế độ phát   
           </h2>
           <p
             style={{

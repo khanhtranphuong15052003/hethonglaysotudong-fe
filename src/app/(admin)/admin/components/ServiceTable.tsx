@@ -363,7 +363,7 @@ export default function ServiceTable() {
           <input
             type="text"
             className="admin-table-search"
-            placeholder="Tìm kiếm mã hoặc tên dịch vụ..."
+            placeholder="Tìm kiếm mã hoặc tên quầy..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -377,10 +377,10 @@ export default function ServiceTable() {
           <thead>
             <tr>
               <th>Thứ tự</th>
-              <th>Mã dịch vụ</th>
+              <th>Mã quầy</th>
               <th>Mã tiền tố</th>
-              <th>Tên dịch vụ</th>
-              <th>Quầy dịch vụ</th>
+              <th>Tên quầy</th>
+              <th>Phòng</th>
               <th>Trạng thái</th>
               <th>Mô tả</th>
               <th>Hành động</th>

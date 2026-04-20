@@ -666,7 +666,7 @@ export default function CounterDisplayPage() {
                     fontSize: 26,
                   }}
                 >
-                  Chưa có vé nào
+                  Chưa có đương sự nào chờ xử lý
                 </td>
               </tr>
             )}

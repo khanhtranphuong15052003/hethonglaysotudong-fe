@@ -245,11 +245,11 @@ export default function PrinterTable() {
           <thead>
             <tr>
               <th>Tên Máy In</th>
-              <th>Mã</th>
+              <th>Mã Máy In</th>
               <th>Vị trí</th>
-              <th>Kết nối</th>
+              <th>Kết nối IP Wifi</th>
               <th>Trạng thái</th>
-              <th>Mặc định</th>
+              <th>Mặc định in</th>
               <th>Hành động</th>
             </tr>
           </thead>

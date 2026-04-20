@@ -239,32 +239,32 @@ table.admin-table th {
 /* Service Table Column Widths */
 table.service-table th:nth-child(1),
 table.service-table td:nth-child(1) {
-  width: 6%;
+  width: 8%;
 }
 
 table.service-table th:nth-child(2),
 table.service-table td:nth-child(2) {
-  width: 8%;
+  width: 10%;
 }
 
 table.service-table th:nth-child(3),
 table.service-table td:nth-child(3) {
-  width: 8%;
+  width: 12%;
 }
 
 table.service-table th:nth-child(4),
 table.service-table td:nth-child(4) {
-  width: 16%;
+  width: 15%;
 }
 
 table.service-table th:nth-child(5),
 table.service-table td:nth-child(5) {
-  width: 32%;
+  width: 28%;
 }
 
 table.service-table th:nth-child(6),
 table.service-table td:nth-child(6) {
-  width: 10%;
+  width: 12%;
 }
 
 table.service-table th:nth-child(7),
@@ -274,7 +274,7 @@ table.service-table td:nth-child(7) {
 
 table.service-table th:nth-child(8),
 table.service-table td:nth-child(8) {
-  width: 10%;
+  width: 11%;
 }
 
 table.service-table th:nth-child(1),
@@ -293,32 +293,32 @@ table.service-table td:nth-child(8) .table-actions {
 /* Counter Table Column Widths - New Order */
 table.counter-table th:nth-child(1),
 table.counter-table td:nth-child(1) {
-  width: 6%;
+  width: 10%;
 }
 
 table.counter-table th:nth-child(2),
 table.counter-table td:nth-child(2) {
-  width: 12%;
+  width: 10%;
 }
 
 table.counter-table th:nth-child(3),
 table.counter-table td:nth-child(3) {
-  width: 8%;
+  width: 10%;
 }
 
 table.counter-table th:nth-child(4),
 table.counter-table td:nth-child(4) {
-  width: 28%;
+  width: 35%;
 }
 
 table.counter-table th:nth-child(5),
 table.counter-table td:nth-child(5) {
-  width: 14%;
+  width: 10%;
 }
 
 table.counter-table th:nth-child(6),
 table.counter-table td:nth-child(6) {
-  width: 18%;
+  width: 15%;
 }
 
 table.counter-table th:nth-child(7),

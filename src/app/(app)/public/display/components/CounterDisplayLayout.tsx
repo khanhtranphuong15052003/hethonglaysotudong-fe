@@ -99,7 +99,7 @@ export default function CounterDisplayLayout({
             <div style={{ padding: "3px 4px", textAlign: "center" }}>
               SỐ PHIẾU
             </div>
-            <div style={{ padding: "3px 4px", textAlign: "center" }}>TÊN</div>
+            <div style={{ padding: "3px 4px", textAlign: "center" }}>HỌ VÀ TÊN</div>
             <div style={{ padding: "3px 4px", textAlign: "center" }}>
               ĐẾN QUẦY
             </div>

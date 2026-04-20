@@ -242,7 +242,7 @@ export default function CounterTable() {
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
       <div className="admin-table-header">
         <div className="font-bold text-2xl" style={{ color: "#003366" }}>
-          QUẢN LÝ QUẦY
+          QUẢN LÝ PHÒNG
         </div>
         <div className="admin-table-actions">
           <AdminTableFilter
@@ -289,7 +289,7 @@ export default function CounterTable() {
           <input
             type="text"
             className="admin-table-search"
-            placeholder="Tìm kiếm mã hoặc tên quầy..."
+            placeholder="Tìm kiếm mã hoặc tên phòng..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -303,9 +303,9 @@ export default function CounterTable() {
           <thead>
             <tr>
               <th>Thứ Tự</th>
+              <th>Tên Phòng</th>
+              <th>Mã Phòng</th>
               <th>Tên Quầy</th>
-              <th>Mã Quầy</th>
-              <th>Dịch Vụ</th>
               <th>Trạng Thái</th>
               <th>Mô tả</th>
               <th>Hành Động</th>

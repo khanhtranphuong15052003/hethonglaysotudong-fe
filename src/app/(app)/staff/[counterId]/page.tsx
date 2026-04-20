@@ -31,11 +31,12 @@ export default function StaffCounterPage() {
   const params = useParams();
   const router = useRouter();
   const counterId = params.counterId as string;
-
+const [hovered, setHovered] = useState<string | null>(null);
   const [counter, setCounter] = useState<Counter | null>(null);
   const [staffName, setStaffName] = useState<string>("");
   const [staffId, setStaffId] = useState<string>("");
   const [restricted, setRestricted] = useState<boolean>(false);
+  const [assignedServices, setAssignedServices] = useState<Service[]>([]);
   const [waitingTickets, setWaitingTickets] = useState<Ticket[]>([]);
   const [recallTickets, setRecallTickets] = useState<Ticket[]>([]);
   const [activeTab, setActiveTab] = useState<"waiting" | "recall">("waiting");
@@ -100,14 +101,16 @@ export default function StaffCounterPage() {
   const applyAdditionalInfo = (info: {
     staffId?: string;
     serviceRestrictionConfigured?: boolean;
+    assignedServices?: Service[];
   }) => {
     if (info.staffId) setStaffId(info.staffId);
     if (info.serviceRestrictionConfigured !== undefined) {
       setRestricted(info.serviceRestrictionConfigured);
     }
+    if (info.assignedServices) {
+      setAssignedServices(info.assignedServices);
+    }
   };
-
-
 
   useEffect(() => {
     const token =
@@ -131,6 +134,7 @@ export default function StaffCounterPage() {
             staffName,
             staffId,
             serviceRestrictionConfigured,
+            assignedServices,
           } = response.data;
 
           if (counter.id !== counterId) {
@@ -146,7 +150,7 @@ export default function StaffCounterPage() {
             totalWaiting,
             staffName,
           });
-          applyAdditionalInfo({ staffId, serviceRestrictionConfigured });
+          applyAdditionalInfo({ staffId, serviceRestrictionConfigured, assignedServices });
           setAuthenticated(true);
           handleRecallListRefresh();
         } else {
@@ -410,7 +414,21 @@ export default function StaffCounterPage() {
         }}
       >
         <div style={{ color: "#666", fontSize: "clamp(14px, 1.1vw, 18px)" }}>
-          {staffName && `Xin chào: ${staffName}`} {restricted && <span style={{ marginLeft: 8, fontSize: '0.85em', color: '#856404', backgroundColor: '#fff3cd', padding: '2px 8px', borderRadius: '4px' }}>Đang áp dụng giới hạn dịch vụ</span>}
+          {staffName && `Xin chào: ${staffName}`}{" "}
+          {restricted && (
+            <span
+              style={{
+                marginLeft: 8,
+                fontSize: "0.85em",
+                color: "#856404",
+                backgroundColor: "#fff3cd",
+                padding: "2px 8px",
+                borderRadius: "4px",
+              }}
+            >
+              Đang áp dụng giới hạn dịch vụ: {assignedServices.map((s) => s.name).join(", ")}
+            </span>
+          )}
         </div>
         <button
           onClick={handleLogout}
@@ -483,8 +501,8 @@ export default function StaffCounterPage() {
               <tr style={{ background: "#003366", color: "white" }}>
                 <th style={{ width: "10%", padding: "clamp(8px, 1vh, 12px) 10px", borderRight: "1px solid #ddd", fontSize: "clamp(12px, 0.9vw, 16px)" }}>STT</th>
                 <th style={{ width: "20%", padding: "clamp(8px, 1vh, 12px) 10px", borderRight: "1px solid #ddd", fontSize: "clamp(12px, 0.9vw, 16px)" }}>SỐ PHIẾU</th>
-                <th style={{ width: activeTab === "recall" ? "30%" : "42%", padding: "clamp(8px, 1vh, 12px) 10px", borderRight: "1px solid #ddd", fontSize: "clamp(12px, 0.9vw, 16px)" }}>TÊN</th>
-                <th style={{ width: activeTab === "recall" ? "20%" : "28%", padding: "clamp(8px, 1vh, 12px) 10px", borderRight: activeTab === "recall" ? "1px solid #ddd" : "none", fontSize: "clamp(12px, 0.9vw, 16px)" }}>DỊCH VỤ</th>
+                <th style={{ width: activeTab === "recall" ? "30%" : "42%", padding: "clamp(8px, 1vh, 12px) 10px", borderRight: "1px solid #ddd", fontSize: "clamp(12px, 0.9vw, 16px)" }}>HỌ VÀ TÊN</th>
+                <th style={{ width: activeTab === "recall" ? "20%" : "28%", padding: "clamp(8px, 1vh, 12px) 10px", borderRight: activeTab === "recall" ? "1px solid #ddd" : "none", fontSize: "clamp(12px, 0.9vw, 16px)" }}>QUẦY</th>
                 {activeTab === "recall" && (
                   <th style={{ width: "20%", padding: "clamp(8px, 1vh, 12px) 10px", fontSize: "clamp(12px, 0.9vw, 16px)" }}>HÀNH ĐỘNG</th>
                 )}
@@ -591,18 +609,21 @@ export default function StaffCounterPage() {
           className="staff-page__actions"
           style={{ flex: 0.4, display: "flex", flexDirection: "column", gap: "clamp(16px, 1.8vh, 24px)", minWidth: 0 }}
         >
-          <div
-            className="staff-page__current-ticket"
-            style={{
-              background: "#ffffff",
-              border: "2px solid #003366",
-              borderRadius: 12,
-              padding: "clamp(16px, 1.8vw, 24px)",
-              flex: 0.35,
-              marginTop: "clamp(24px, 4vh, 52px)",
-              boxShadow: "0 10px 24px rgba(0, 61, 130, 0.08)",
-            }}
-          >
+         <div
+  className="staff-page__current-ticket"
+  style={{
+    background: "white",
+    border: "2px solid #003366",
+    borderRadius: 12,
+    padding: "clamp(16px, 1.8vw, 24px)",
+    flex: "0 0 auto",              // 🔥 không cho giãn
+    marginTop: "clamp(24px, 4vh, 52px)",
+    boxShadow: "0 10px 24px rgba(0, 61, 130, 0.08)",
+
+    minHeight: "35vh",             // 🔥 giới hạn chiều cao
+    overflowY: "auto"              // 🔥 có scroll nếu dài
+  }}
+>
             <h2
               style={{
                 margin: "0 0 20px 0",
@@ -638,17 +659,87 @@ export default function StaffCounterPage() {
             )}
           </div>
 
-          <div className="staff-page__button-group" style={{ display: "flex", flexDirection: "column", gap: "clamp(10px, 1.2vh, 14px)", flex: 0.5 }}>
-            <button onClick={handleCallNext} style={{ padding: "clamp(12px, 1.5vh, 18px) 20px", fontSize: "clamp(18px, 1.8vw, 28px)", fontWeight: 700, background: "white", color: "#333", border: "2px solid #003366", borderRadius: 10, cursor: "pointer" }}>
-              {currentTicket ? "Gọi lại" : "Gọi tiếp theo"}
-            </button>
-            <button onClick={handleComplete} disabled={!currentTicket} style={{ padding: "clamp(12px, 1.5vh, 18px) 20px", fontSize: "clamp(18px, 1.8vw, 28px)", fontWeight: 700, background: currentTicket ? "white" : "#f0f0f0", color: currentTicket ? "#333" : "#999", border: `2px solid ${currentTicket ? "#003366" : "#ccc"}`, borderRadius: 10, cursor: currentTicket ? "pointer" : "not-allowed" }}>
-              Hoàn thành
-            </button>
-            <button onClick={handleSkip} disabled={!currentTicket} style={{ padding: "clamp(12px, 1.5vh, 18px) 20px", fontSize: "clamp(18px, 1.8vw, 28px)", fontWeight: 700, background: currentTicket ? "white" : "#f0f0f0", color: currentTicket ? "#333" : "#999", border: `2px solid ${currentTicket ? "#003366" : "#ccc"}`, borderRadius: 10, cursor: currentTicket ? "pointer" : "not-allowed" }}>
-              Bỏ qua
-            </button>
-          </div>
+          <div
+  className="staff-page__button-group"
+  style={{
+    display: "flex",
+    flexDirection: "column",
+    gap: "clamp(10px, 1.2vh, 14px)",
+    flex: 0.5
+  }}
+>
+  {/* CALL */}
+  <button
+  onClick={handleCallNext}
+  onMouseEnter={() => setHovered("call")}
+  onMouseLeave={() => setHovered(null)}
+  style={{
+    padding: "clamp(12px, 1.5vh, 18px) 20px",
+    fontSize: "clamp(18px, 1.8vw, 28px)",
+    fontWeight: 700,
+    background: hovered === "call" ? "#003366" : "green", // 🔥 thêm hover
+    color: "white",
+    border: "2px solid #003366",
+    borderRadius: 10,
+    cursor: "pointer",
+    transition: "all 0.2s ease"
+  }}
+>
+  {currentTicket ? "Gọi lại" : "Gọi tiếp theo"}
+</button>
+
+  {/* COMPLETE */}
+  <button
+  onClick={handleComplete}
+  disabled={!currentTicket}
+  onMouseEnter={() => setHovered("complete")}
+  onMouseLeave={() => setHovered(null)}
+  style={{
+    padding: "clamp(12px, 1.5vh, 18px) 20px",
+    fontSize: "clamp(18px, 1.8vw, 28px)",
+    fontWeight: 700,
+    background:
+      hovered === "complete" && currentTicket
+        ? "#003366"
+        : currentTicket
+        ? "#007bff"
+        : "#f0f0f0",
+   color: currentTicket ? "white" : "black",
+    border: `2px solid ${currentTicket ? "#003366" : "#ccc"}`,
+    borderRadius: 10,
+    cursor: currentTicket ? "pointer" : "not-allowed",
+    transition: "all 0.2s ease"
+  }}
+>
+  Hoàn thành
+</button>
+
+  {/* SKIP */}
+ <button
+  onClick={handleSkip}
+  disabled={!currentTicket}
+  onMouseEnter={() => setHovered("skip")}
+  onMouseLeave={() => setHovered(null)}
+  style={{
+    padding: "clamp(12px, 1.5vh, 18px) 20px",
+    fontSize: "clamp(18px, 1.8vw, 28px)",
+    fontWeight: 700,
+    background:
+      hovered === "skip" && currentTicket
+        ? "#003366"
+        : currentTicket
+        ? "#ff9800"
+        : "#f0f0f0",
+    color: currentTicket ? "white" : "black",
+    border: `2px solid ${currentTicket ? "#003366" : "#ccc"}`,
+    borderRadius: 10,
+    cursor: currentTicket ? "pointer" : "not-allowed",
+    transition: "all 0.2s ease"
+  }}
+>
+  Bỏ qua
+</button>
+</div>
         </div>
       </div>
 
