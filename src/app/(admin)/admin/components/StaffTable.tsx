@@ -576,9 +576,12 @@ error(errorMessage);
         />
       )}
 
-      <div className="admin-table-footer">
-        <span>Tổng cộng: {filteredStaff.length} nhân viên (Trang {currentPage}/{totalPages})</span>
-      </div>
+<div className="admin-table-footer">
+  <span>
+    Hiển thị {currentItems.length} trên tổng số {filteredStaff.length} kết quả
+  </span>
+
+</div>
 
     {showModal && (
   <div className="admin-modal">

@@ -61,30 +61,21 @@ export default function HomePage() {
     const faClass = iconName.startsWith("fa-") ? `fas ${iconName}` : `fas ${iconName}`;
     return <i className={faClass}></i>;
   };
+  
+const SERVICE_COLORS = [
+  { bg: "#F05769", hover: "#E84655" },
+  { bg: "#41B660", hover: "#36944E" },
+  { bg: "#0B6D7F", hover: "#084F5A" },
+  { bg: "#8383C1", hover: "#6B6BA5" },
+  { bg: "#FF8C42", hover: "#E6762F" },
+  { bg: "#6BCB77", hover: "#57A863" },
+  { bg: "#4D96FF", hover: "#3B7EDB" },
+  { bg: "#B76EFF", hover: "#9A59DB" },
+  { bg: "#FF6B6B", hover: "#E05555" },
+  { bg: "#00A8A8", hover: "#008080" },
+];
 
-  const getCardBackground = (
-    serviceName: string,
-  ): { background: string; hoverBackground: string; color: string } => {
-    const normalized = serviceName.trim().toLowerCase();
-
-    if (normalized.includes("nhận đơn")) {
-      return { background: "#F05769", hoverBackground: "#E84655", color: "#ffffff" };
-    }
-
-    if (
-      normalized.includes("trả kết quả") ||
-      normalized.includes("trả kết quả")
-    ) {
-      return { background: "#41B660", hoverBackground: "#36944E", color: "#ffffff" };
-    }
-
-    if (normalized.includes("sao y")) {
-      return { background: "#0b6d7f", hoverBackground: "#084f5a", color: "#ffffff" };
-    }
-
-    return { background: "#8383c1", hoverBackground: "#6B6BA5", color: "#ffffff" };
-  };
-
+  
   if (error) {
     return (
       <div style={{ padding: 20, color: "red" }}>
@@ -92,7 +83,15 @@ export default function HomePage() {
       </div>
     );
   }
+const getCardBackground = (index: number) => {
+  const colorSet = SERVICE_COLORS[index % SERVICE_COLORS.length];
 
+  return {
+    background: colorSet.bg,
+    hoverBackground: colorSet.hover,
+    color: "#ffffff",
+  };
+};
   return (
     <div
       style={{
@@ -133,8 +132,9 @@ export default function HomePage() {
               minHeight: 0,
             }}
           >
-            {servicesList.map((s) => {
-              const { background, hoverBackground, color } = getCardBackground(s.name);
+          {servicesList.map((s, index) => {
+  const { background, hoverBackground, color } =
+    getCardBackground(index);
 
               return (
                 <Link

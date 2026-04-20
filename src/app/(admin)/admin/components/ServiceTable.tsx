@@ -334,11 +334,11 @@ export default function ServiceTable() {
             sections={[
               {
                 id: "service-counter",
-                label: "Quầy quầy",
+                label: "Phòng",
                 value: filterCounterId,
                 onChange: setFilterCounterId,
                 options: [
-                  { label: "Tất cả quầy", value: "all" },
+                  { label: "Tất cả phòng", value: "all" },
                   ...[...counters]
                     .sort((a, b) => a.number - b.number)
                     .map((counter) => ({

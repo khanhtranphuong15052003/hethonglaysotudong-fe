@@ -102,8 +102,8 @@ function ServiceTicketContent() {
       return;
     }
 
-    if (!/^[0-9]{8,10}$/.test(phoneNumber.replace(/\D/g, ""))) {
-      showToast("Vui lòng nhập đúng số điện thoại - từ 8 đến 10 số", "error");
+    if (!/^[0-9]{8,12}$/.test(phoneNumber.replace(/\D/g, ""))) {
+      showToast("Vui lòng nhập đúng số điện thoại (tối thiểu 8 số đến 12 số)", "error");
       return;
     }
 

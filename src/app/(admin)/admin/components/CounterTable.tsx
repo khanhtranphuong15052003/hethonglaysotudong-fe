@@ -256,11 +256,11 @@ export default function CounterTable() {
             sections={[
               {
                 id: "counter-service",
-                label: "Quầy",
+                label: "Phòng",
                 value: filterServiceId,
                 onChange: setFilterServiceId,
                 options: [
-                  { label: "Tất cả quầy", value: "all" },
+                  { label: "Tất cả phòng", value: "all" },
                   ...[...services]
                     .sort(
                       (a, b) =>

@@ -240,7 +240,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                   color: "#003366",
                 }}
               >
-                TÒA ÁN NHÂN DÂN KHU VỰC 1
+                TÒA ÁN NHÂN DÂN KHU VỰC 1 - THÀNH PHỐ HỒ CHÍ MINH
               </h1>
               <div
                 className="admin-user-info"
