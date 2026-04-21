@@ -23,3 +23,18 @@ export const getSequentialTagColorStyle = (index: number): TagColorStyle => {
   const normalizedIndex = Math.abs(index) % TAG_COLOR_PALETTE.length;
   return TAG_COLOR_PALETTE[normalizedIndex];
 };
+
+export const getPrefixTagColorStyle = (
+  prefixNumber: number | null | undefined,
+): TagColorStyle => {
+  const normalizedNumber = Number(prefixNumber ?? 0);
+  if (!Number.isFinite(normalizedNumber) || normalizedNumber <= 0) {
+    return getSequentialTagColorStyle(0);
+  }
+
+  const prefixColorSequence = [4, 0, 3, 1];
+  const normalizedIndex =
+    (Math.trunc(Math.abs(normalizedNumber)) - 1) % prefixColorSequence.length;
+
+  return getSequentialTagColorStyle(prefixColorSequence[normalizedIndex]);
+};

@@ -11,9 +11,9 @@ export interface FilterOption {
 export interface FilterSection {
   id: string;
   label: string;
-  value: string;
+  value: string[];
   options: FilterOption[];
-  onChange: (value: string) => void;
+  onChange: (value: string[]) => void;
 }
 
 interface AdminTableFilterProps {
@@ -47,21 +47,31 @@ export default function AdminTableFilter({
   const hasActiveFilters = useMemo(() => activeCount > 0, [activeCount]);
 
   return (
-    <div className="admin-filter" ref={containerRef}>
+    <div
+      className="admin-filter"
+      ref={containerRef}
+      style={{ display: "flex", alignItems: "center", gap: "10px" }}
+    >
       <button
         type="button"
         className={`admin-filter-trigger ${open ? "is-open" : ""}`}
         onClick={() => setOpen((prev) => !prev)}
       >
         <FiFilter size={16} />
-        <span>Filter</span>
-        {hasActiveFilters && (
-          <span className="admin-filter-badge">{activeCount}</span>
-        )}
+        <span>Bộ lọc</span>
+        <span
+          className={`admin-filter-badge ${hasActiveFilters ? "" : "is-hidden"}`}
+          aria-hidden={!hasActiveFilters}
+        >
+          {hasActiveFilters ? activeCount : 0}
+        </span>
       </button>
 
       {open && (
-        <div className="admin-filter-popover">
+        <div
+          className="admin-filter-popover"
+          style={{ maxHeight: "400px", overflowY: "auto" }}
+        >
           <div className="admin-filter-popover__header">
             <strong>Bộ lọc</strong>
             {hasActiveFilters && (
@@ -78,25 +88,64 @@ export default function AdminTableFilter({
 
           <div className="admin-filter-popover__body">
             {sections.map((section) => (
-              <label
-                key={section.id}
-                className="admin-filter-field"
-                htmlFor={`filter-${section.id}`}
-              >
-                <span>{section.label}</span>
-                <select
-                  id={`filter-${section.id}`}
-                  className="admin-filter-select"
-                  value={section.value}
-                  onChange={(event) => section.onChange(event.target.value)}
+              <div key={section.id} className="admin-filter-field">
+                <span style={{ display: "block", marginBottom: "8px" }}>
+                  {section.label}
+                </span>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px",
+                    maxHeight: "150px",
+                    overflowY: "auto",
+                  }}
                 >
-                  {section.options.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  {section.options.map((option) => {
+                    const isChecked = section.value.includes(option.value);
+
+                    return (
+                      <label
+                        key={option.value}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          cursor: "pointer",
+                          fontWeight: "normal",
+                          textTransform: "none",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(event) => {
+                            if (event.target.checked) {
+                              if (option.value === "all") {
+                                section.onChange(["all"]);
+                              } else {
+                                const newValue = section.value.filter(
+                                  (item) =>
+                                    item !== "all" && item !== option.value,
+                                );
+                                newValue.push(option.value);
+                                section.onChange(newValue);
+                              }
+                            } else {
+                              const newValue = section.value.filter(
+                                (item) => item !== option.value,
+                              );
+                              if (newValue.length === 0) newValue.push("all");
+                              section.onChange(newValue);
+                            }
+                          }}
+                        />
+                        {option.label}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
             ))}
           </div>
         </div>

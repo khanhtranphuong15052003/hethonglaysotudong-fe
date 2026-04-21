@@ -18,6 +18,7 @@ import {
 import { FONTAWESOME_ICONS } from "@/constants/icons";
 import { useToast } from "@/hooks/useToast";
 import ToastContainer from "@/components/ToastContainer";
+import AdminConfirmDialog from "@/components/admin/AdminConfirmDialog";
 import Pagination from "./Pagination";
 import AdminTableFilter from "./AdminTableFilter";
 import { getSequentialTagColorStyle } from "@/lib/adminTagColors";
@@ -37,8 +38,9 @@ export default function ServiceTable() {
   const [counters, setCounters] = useState<Counter[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterCounterId, setFilterCounterId] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterCounterIds, setFilterCounterIds] = useState<string[]>(["all"]);
+  const [filterStatuses, setFilterStatuses] = useState<string[]>(["all"]);
+  const [filterPrefixNumbers, setFilterPrefixNumbers] = useState<string[]>(["all"]);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedCounters, setSelectedCounters] = useState<string[]>([]);
@@ -279,13 +281,17 @@ export default function ServiceTable() {
       service.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
       service.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCounter =
-      filterCounterId === "all" ||
-      service.counters?.some((counter) => counter._id === filterCounterId);
+      filterCounterIds.includes("all") ||
+      service.counters?.some((counter) => filterCounterIds.includes(counter._id));
     const matchesStatus =
-      filterStatus === "all" ||
-      (filterStatus === "active" ? service.isActive : !service.isActive);
+      filterStatuses.includes("all") ||
+      (filterStatuses.includes("active") && service.isActive) ||
+      (filterStatuses.includes("inactive") && !service.isActive);
+    const matchesPrefix =
+      filterPrefixNumbers.includes("all") ||
+      filterPrefixNumbers.includes(String(service.prefixNumber ?? 0));
 
-    return matchesSearch && matchesCounter && matchesStatus;
+    return matchesSearch && matchesCounter && matchesStatus && matchesPrefix;
   });
 
   const counterColorMap = new Map(
@@ -313,7 +319,7 @@ export default function ServiceTable() {
   // Reset to first page when search changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterCounterId, filterStatus]);
+  }, [searchTerm, filterCounterIds, filterStatuses, filterPrefixNumbers]);
 
   return (
     <div className="admin-table-container">
@@ -324,19 +330,22 @@ export default function ServiceTable() {
         </div>
         <div className="admin-table-actions">
           <AdminTableFilter
-            activeCount={[filterCounterId, filterStatus].filter(
-              (value) => value !== "all",
-            ).length}
+            activeCount={
+              (filterCounterIds.includes("all") ? 0 : filterCounterIds.length) +
+              (filterStatuses.includes("all") ? 0 : filterStatuses.length) +
+              (filterPrefixNumbers.includes("all") ? 0 : filterPrefixNumbers.length)
+            }
             onReset={() => {
-              setFilterCounterId("all");
-              setFilterStatus("all");
+              setFilterCounterIds(["all"]);
+              setFilterStatuses(["all"]);
+              setFilterPrefixNumbers(["all"]);
             }}
             sections={[
               {
                 id: "service-counter",
                 label: "Phòng",
-                value: filterCounterId,
-                onChange: setFilterCounterId,
+                value: filterCounterIds,
+                onChange: setFilterCounterIds,
                 options: [
                   { label: "Tất cả phòng", value: "all" },
                   ...[...counters]
@@ -350,12 +359,29 @@ export default function ServiceTable() {
               {
                 id: "service-status",
                 label: "Trạng thái",
-                value: filterStatus,
-                onChange: setFilterStatus,
+                value: filterStatuses,
+                onChange: setFilterStatuses,
                 options: [
                   { label: "Tất cả trạng thái", value: "all" },
                   { label: "Hoạt động", value: "active" },
                   { label: "Vô hiệu", value: "inactive" },
+                ],
+              },
+              {
+                id: "service-prefix",
+                label: "Mã tiền tố",
+                value: filterPrefixNumbers,
+                onChange: setFilterPrefixNumbers,
+                options: [
+                  { label: "Tất cả mã tiền tố", value: "all" },
+                  ...Array.from(
+                    new Set(services.map((service) => String(service.prefixNumber ?? 0))),
+                  )
+                    .sort((a, b) => Number(a) - Number(b))
+                    .map((value) => ({
+                      label: `Tiền tố ${value}`,
+                      value,
+                    })),
                 ],
               },
             ]}
@@ -398,7 +424,9 @@ export default function ServiceTable() {
                 <tr key={service._id}>
                   <td>{service.displayOrder}</td>
                   <td>{service.code}</td>
-                  <td>{service.prefixNumber ?? 0}</td>
+                  <td>
+                    {service.prefixNumber ?? 0}
+                  </td>
                   <td>
                     <span style={{ display: "flex", alignItems: "center" }}>
                       {service.icon &&
@@ -486,8 +514,7 @@ export default function ServiceTable() {
         <div className="admin-modal">
           <div className="admin-modal-content">
             <button className="admin-modal-close" onClick={handleCloseModal}>
-              Ă—
-            </button>
+              ×</button>
             <h3 style={{ marginTop: 0, marginBottom: 20 }}>
               {editingId ? "Chỉnh Sửa Quầy" : "Thêm Quầy Mới"}
             </h3>
@@ -576,52 +603,21 @@ export default function ServiceTable() {
                   >
                     Trạng Thái:
                   </label>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "20px",
-                      alignItems: "center",
-                    }}
-                  >
-                    <label
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <input
-                        type="radio"
-                        name="status"
-                        checked={formData.isActive}
-                        onChange={() => handleStatusChange(true)}
-                        style={{ cursor: "pointer" }}
-                      />
-                      <span style={{ fontSize: "14px", color: "#333" }}>
-                        Hoạt động
-                      </span>
-                    </label>
-                    <label
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <input
-                        type="radio"
-                        name="status"
-                        checked={!formData.isActive}
-                        onChange={() => handleStatusChange(false)}
-                        style={{ cursor: "pointer" }}
-                      />
-                      <span style={{ fontSize: "14px", color: "#333" }}>
-                        Vô hiệu
-                      </span>
-                    </label>
-                  </div>
+                  <label className="admin-checkbox-card">
+                    <input
+                      type="checkbox"
+                      checked={formData.isActive}
+                      onChange={(e) => handleStatusChange(e.target.checked)}
+                    />
+                    <div>
+                      <div className="admin-checkbox-card-title">
+                        {formData.isActive ? "Hoạt động" : "Vô hiệu"}
+                      </div>
+                      <div className="admin-checkbox-card-description">
+                        Bật checkbox là hoạt động, bỏ chọn là vô hiệu
+                      </div>
+                    </div>
+                  </label>
                 </div>
               </div>
 
@@ -766,130 +762,27 @@ export default function ServiceTable() {
         </div>
       )}
 
-      {/* Status Confirmation Dialog */}
-      {showStatusConfirm && (
-        <div className="admin-modal">
-          <div
-            style={{
-              background: "white",
-              borderRadius: "8px",
-              padding: "30px",
-              maxWidth: "400px",
-              width: "90%",
-              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
-              textAlign: "center",
-            }}
-          >
-            <h3 style={{ marginTop: 0, marginBottom: "20px", color: "#333" }}>
-              Xác Thực Thay Đổi Trạng Thái
-            </h3>
-            <p
-              style={{ marginBottom: "20px", color: "#666", fontSize: "14px" }}
-            >
-              Bạn có chắc chắn muốn chuyển trạng thái quầy thành{" "}
-              <strong
-                style={{ color: pendingStatusChange ? "#28a745" : "#dc3545" }}
-              >
-                {pendingStatusChange ? "Hoạt động" : "Vô hiệu"}
-              </strong>
-              ?
-            </p>
-            <div
-              style={{ display: "flex", gap: "10px", justifyContent: "center" }}
-            >
-              <button
-                onClick={handleConfirmStatus}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "#28a745",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
-              >
-                Xác nhận
-              </button>
-              <button
-                onClick={() => setShowStatusConfirm(false)}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "#6c757d",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
-              >
-                Hủy
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AdminConfirmDialog
+        isOpen={showStatusConfirm}
+        title="Xác thực thay đổi trạng thái"
+        message={`Bạn có chắc chắn muốn chuyển trạng thái quầy thành ${pendingStatusChange ? "Hoạt động" : "Vô hiệu"}?`}
+        onConfirm={handleConfirmStatus}
+        onCancel={() => {
+          setShowStatusConfirm(false);
+          setPendingStatusChange(null);
+        }}
+      />
 
-      {/* Delete Confirmation Dialog */}
-      {showDeleteConfirm && (
-        <div className="admin-modal">
-          <div
-            style={{
-              background: "white",
-              borderRadius: "8px",
-              padding: "30px",
-              maxWidth: "400px",
-              width: "90%",
-              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
-              textAlign: "center",
-            }}
-          >
-            <h3 style={{ marginTop: 0, marginBottom: "20px", color: "#333" }}>
-              Xác Nhận Xóa Quầy
-            </h3>
-            <p
-              style={{ marginBottom: "20px", color: "#666", fontSize: "14px" }}
-            >
-              Bạn có chắc chắn muốn xóa Quầy này? Hành động này không thể
-              hoàn tác.
-            </p>
-            <div
-              style={{ display: "flex", gap: "10px", justifyContent: "center" }}
-            >
-              <button
-                onClick={handleConfirmDelete}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "#dc3545",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
-              >
-                Xóa
-              </button>
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "#6c757d",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
-              >
-                Hủy
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AdminConfirmDialog
+        isOpen={showDeleteConfirm}
+        title="Xác nhận xóa quầy"
+        message="Bạn có chắc chắn muốn xóa quầy này? Hành động này không thể hoàn tác."
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </div>
   );
 }
+
 
 

@@ -31,7 +31,7 @@ export default function StaffCounterPage() {
   const params = useParams();
   const router = useRouter();
   const counterId = params.counterId as string;
-const [hovered, setHovered] = useState<string | null>(null);
+  const [hovered, setHovered] = useState<string | null>(null);
   const [counter, setCounter] = useState<Counter | null>(null);
   const [staffName, setStaffName] = useState<string>("");
   const [staffId, setStaffId] = useState<string>("");
@@ -62,7 +62,7 @@ const [hovered, setHovered] = useState<string | null>(null);
     isOpen: false,
     title: "",
     message: "",
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
 
   const showToast = (
@@ -157,14 +157,14 @@ const [hovered, setHovered] = useState<string | null>(null);
           sessionStorage.removeItem("staffToken");
           router.push("/staff/login?error=session_expired");
         }
-    } catch (error) {
-      console.error("Failed to fetch staff display data:", error);
-      if (error instanceof Error && error.message === AUTH_EXPIRED_ERROR) {
-        handleSessionExpired();
-        return;
-      }
-      sessionStorage.removeItem("staffToken");
-      router.push("/staff/login?error=fetch_failed");
+      } catch (error) {
+        console.error("Failed to fetch staff display data:", error);
+        if (error instanceof Error && error.message === AUTH_EXPIRED_ERROR) {
+          handleSessionExpired();
+          return;
+        }
+        sessionStorage.removeItem("staffToken");
+        router.push("/staff/login?error=fetch_failed");
       } finally {
         setLoading(false);
       }
@@ -240,8 +240,12 @@ const [hovered, setHovered] = useState<string | null>(null);
           showToast(response.message || "Không thể gọi lại vé!", "error");
         }
       } catch (error) {
-        if (error instanceof Error && error.message === AUTH_EXPIRED_ERROR) {
-          handleSessionExpired();
+        if (error instanceof Error) {
+          if (error.message === AUTH_EXPIRED_ERROR) {
+            handleSessionExpired();
+            return;
+          }
+          showToast(error.message, "error");
           return;
         }
         showToast("Lỗi hệ thống khi gọi lại vé!", "error");
@@ -264,8 +268,12 @@ const [hovered, setHovered] = useState<string | null>(null);
         showToast(response.message || "Không thể gọi vé!", "error");
       }
     } catch (error) {
-      if (error instanceof Error && error.message === AUTH_EXPIRED_ERROR) {
-        handleSessionExpired();
+      if (error instanceof Error) {
+        if (error.message === AUTH_EXPIRED_ERROR) {
+          handleSessionExpired();
+          return;
+        }
+        showToast(error.message, "error");
         return;
       }
       console.error("Call ticket error:", error);
@@ -294,8 +302,12 @@ const [hovered, setHovered] = useState<string | null>(null);
         showToast(response.message || "Không thể gọi lại vé!", "error");
       }
     } catch (error) {
-      if (error instanceof Error && error.message === AUTH_EXPIRED_ERROR) {
-        handleSessionExpired();
+      if (error instanceof Error) {
+        if (error.message === AUTH_EXPIRED_ERROR) {
+          handleSessionExpired();
+          return;
+        }
+        showToast(error.message, "error");
         return;
       }
       showToast("Lỗi hệ thống khi gọi lại vé!", "error");
@@ -321,11 +333,15 @@ const [hovered, setHovered] = useState<string | null>(null);
             showToast(response.message || "Không thể hoàn thành vé!", "error");
           }
         } catch (error) {
-          if (error instanceof Error && error.message === AUTH_EXPIRED_ERROR) {
-            handleSessionExpired();
-            return;
+          if (error instanceof Error) {
+            if (error.message === AUTH_EXPIRED_ERROR) {
+              handleSessionExpired();
+              return;
+            }
+            showToast(error.message, "error");
+          } else {
+            showToast("Lỗi hệ thống khi hoàn thành vé!", "error");
           }
-          showToast("Lỗi hệ thống khi hoàn thành vé!", "error");
         } finally {
           setConfirmModal((prev) => ({ ...prev, isOpen: false }));
         }
@@ -353,11 +369,15 @@ const [hovered, setHovered] = useState<string | null>(null);
             showToast(response.message || "Không thể bỏ qua vé!", "error");
           }
         } catch (error) {
-          if (error instanceof Error && error.message === AUTH_EXPIRED_ERROR) {
-            handleSessionExpired();
-            return;
+          if (error instanceof Error) {
+            if (error.message === AUTH_EXPIRED_ERROR) {
+              handleSessionExpired();
+              return;
+            }
+            showToast(error.message, "error");
+          } else {
+            showToast("Lỗi hệ thống khi bỏ qua vé!", "error");
           }
-          showToast("Lỗi hệ thống khi bỏ qua vé!", "error");
         } finally {
           setConfirmModal((prev) => ({ ...prev, isOpen: false }));
         }
@@ -453,15 +473,15 @@ const [hovered, setHovered] = useState<string | null>(null);
         style={{ display: "flex", gap: "clamp(16px, 2vw, 28px)", flex: 1 }}
       >
         <div
-  className="staff-page__queue"
-  style={{
-    flex: 0.6,
-    overflowY: "auto",
-    minWidth: 0,
-    height: "75vh",        // 🔥 fix chiều cao
-    maxHeight: "75vh"
-  }}
->
+          className="staff-page__queue"
+          style={{
+            flex: 0.6,
+            overflowY: "auto",
+            minWidth: 0,
+            height: "75vh",        // 🔥 fix chiều cao
+            maxHeight: "75vh"
+          }}
+        >
           <div style={{ display: "flex", gap: "16px", marginBottom: "clamp(12px, 1.6vh, 18px)", borderBottom: "2px solid #eee" }}>
             <h3
               onClick={() => setActiveTab("waiting")}
@@ -520,7 +540,7 @@ const [hovered, setHovered] = useState<string | null>(null);
             <tbody>
               {activeTab === "waiting" ? (
                 waitingTickets.length > 0 ? (
-                waitingTickets.slice(0, 10).map((ticket, index) => (
+                  waitingTickets.slice(0, 10).map((ticket, index) => (
                     <tr key={ticket.id} style={{ borderBottom: "1px solid #e0e0e0" }}>
                       <td style={{ padding: "clamp(8px, 0.95vh, 12px) 10px", borderRight: "1px solid #ddd", fontSize: "clamp(14px, 1vw, 18px)" }}>
                         {index + 1}
@@ -618,21 +638,21 @@ const [hovered, setHovered] = useState<string | null>(null);
           className="staff-page__actions"
           style={{ flex: 0.4, display: "flex", flexDirection: "column", gap: "clamp(16px, 1.8vh, 24px)", minWidth: 0 }}
         >
-         <div
-  className="staff-page__current-ticket"
-  style={{
-    background: "white",
-    border: "2px solid #003366",
-    borderRadius: 12,
-    padding: "clamp(16px, 1.8vw, 24px)",
-    flex: "0 0 auto",              // 🔥 không cho giãn
-    marginTop: "clamp(24px, 4vh, 52px)",
-    boxShadow: "0 10px 24px rgba(0, 61, 130, 0.08)",
+          <div
+            className="staff-page__current-ticket"
+            style={{
+              background: "white",
+              border: "2px solid #003366",
+              borderRadius: 12,
+              padding: "clamp(16px, 1.8vw, 24px)",
+              flex: "0 0 auto",              // 🔥 không cho giãn
+              marginTop: "clamp(24px, 4vh, 52px)",
+              boxShadow: "0 10px 24px rgba(0, 61, 130, 0.08)",
 
-    minHeight: "35vh",             // 🔥 giới hạn chiều cao
-    overflowY: "auto"              // 🔥 có scroll nếu dài
-  }}
->
+              minHeight: "35vh",             // 🔥 giới hạn chiều cao
+              overflowY: "auto"              // 🔥 có scroll nếu dài
+            }}
+          >
             <h2
               style={{
                 margin: "0 0 20px 0",
@@ -669,86 +689,92 @@ const [hovered, setHovered] = useState<string | null>(null);
           </div>
 
           <div
-  className="staff-page__button-group"
-  style={{
-    display: "flex",
-    flexDirection: "column",
-    gap: "clamp(10px, 1.2vh, 14px)",
-    flex: 0.5
-  }}
->
-  {/* CALL */}
-  <button
-  onClick={handleCallNext}
-  onMouseEnter={() => setHovered("call")}
-  onMouseLeave={() => setHovered(null)}
-  style={{
-    padding: "clamp(12px, 1.5vh, 18px) 20px",
-    fontSize: "clamp(18px, 1.8vw, 28px)",
-    fontWeight: 700,
-    background: hovered === "call" ? "#003366" : "green", // 🔥 thêm hover
-    color: "white",
-    border: "2px solid #003366",
-    borderRadius: 10,
-    cursor: "pointer",
-    transition: "all 0.2s ease"
-  }}
->
-  {currentTicket ? "Gọi lại" : "Gọi tiếp theo"}
-</button>
+            className="staff-page__button-group"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "clamp(10px, 1.2vh, 14px)",
+              flex: 0.5
+            }}
+          >
+            {/* CALL */}
+            <button
+              onClick={handleCallNext}
+              disabled={!!currentTicket}
+              onMouseEnter={() => setHovered("call")}
+              onMouseLeave={() => setHovered(null)}
+              style={{
+                padding: "clamp(12px, 1.5vh, 18px) 20px",
+                fontSize: "clamp(18px, 1.8vw, 28px)",
+                fontWeight: 700,
+                background:
+                  hovered === "call" && !currentTicket
+                    ? "#003366"
+                    : !currentTicket
+                      ? "green"
+                      : "#f0f0f0",
+                color: !currentTicket ? "white" : "black",
+                border: `2px solid ${!currentTicket ? "#003366" : "#ccc"}`,
+                borderRadius: 10,
+                cursor: !currentTicket ? "pointer" : "not-allowed",
+                transition: "all 0.2s ease"
+              }}
+            >
+              Gọi
+            </button>
 
-  {/* COMPLETE */}
-  <button
-  onClick={handleComplete}
-  disabled={!currentTicket}
-  onMouseEnter={() => setHovered("complete")}
-  onMouseLeave={() => setHovered(null)}
-  style={{
-    padding: "clamp(12px, 1.5vh, 18px) 20px",
-    fontSize: "clamp(18px, 1.8vw, 28px)",
-    fontWeight: 700,
-    background:
-      hovered === "complete" && currentTicket
-        ? "#003366"
-        : currentTicket
-        ? "#007bff"
-        : "#f0f0f0",
-   color: currentTicket ? "white" : "black",
-    border: `2px solid ${currentTicket ? "#003366" : "#ccc"}`,
-    borderRadius: 10,
-    cursor: currentTicket ? "pointer" : "not-allowed",
-    transition: "all 0.2s ease"
-  }}
->
-  Hoàn thành
-</button>
+            {/* COMPLETE */}
+            <button
+              onClick={handleComplete}
+              disabled={!currentTicket}
+              onMouseEnter={() => setHovered("complete")}
+              onMouseLeave={() => setHovered(null)}
+              style={{
+                padding: "clamp(12px, 1.5vh, 18px) 20px",
+                fontSize: "clamp(18px, 1.8vw, 28px)",
+                fontWeight: 700,
+                background:
+                  hovered === "complete" && currentTicket
+                    ? "#003366"
+                    : currentTicket
+                      ? "#007bff"
+                      : "#f0f0f0",
+                color: currentTicket ? "white" : "black",
+                border: `2px solid ${currentTicket ? "#003366" : "#ccc"}`,
+                borderRadius: 10,
+                cursor: currentTicket ? "pointer" : "not-allowed",
+                transition: "all 0.2s ease"
+              }}
+            >
+              Hoàn thành
+            </button>
 
-  {/* SKIP */}
- <button
-  onClick={handleSkip}
-  disabled={!currentTicket}
-  onMouseEnter={() => setHovered("skip")}
-  onMouseLeave={() => setHovered(null)}
-  style={{
-    padding: "clamp(12px, 1.5vh, 18px) 20px",
-    fontSize: "clamp(18px, 1.8vw, 28px)",
-    fontWeight: 700,
-    background:
-      hovered === "skip" && currentTicket
-        ? "#003366"
-        : currentTicket
-        ? "#ff9800"
-        : "#f0f0f0",
-    color: currentTicket ? "white" : "black",
-    border: `2px solid ${currentTicket ? "#003366" : "#ccc"}`,
-    borderRadius: 10,
-    cursor: currentTicket ? "pointer" : "not-allowed",
-    transition: "all 0.2s ease"
-  }}
->
-  Bỏ qua
-</button>
-</div>
+            {/* SKIP */}
+            <button
+              onClick={handleSkip}
+              disabled={!currentTicket}
+              onMouseEnter={() => setHovered("skip")}
+              onMouseLeave={() => setHovered(null)}
+              style={{
+                padding: "clamp(12px, 1.5vh, 18px) 20px",
+                fontSize: "clamp(18px, 1.8vw, 28px)",
+                fontWeight: 700,
+                background:
+                  hovered === "skip" && currentTicket
+                    ? "#003366"
+                    : currentTicket
+                      ? "#ff9800"
+                      : "#f0f0f0",
+                color: currentTicket ? "white" : "black",
+                border: `2px solid ${currentTicket ? "#003366" : "#ccc"}`,
+                borderRadius: 10,
+                cursor: currentTicket ? "pointer" : "not-allowed",
+                transition: "all 0.2s ease"
+              }}
+            >
+              Bỏ qua
+            </button>
+          </div>
         </div>
       </div>
 

@@ -12,6 +12,7 @@ import {
 } from "@/services/admin.service";
 import { useToast } from "@/hooks/useToast";
 import ToastContainer from "@/components/ToastContainer";
+import AdminConfirmDialog from "@/components/admin/AdminConfirmDialog";
 import Pagination from "./Pagination";
 import AdminTableFilter from "./AdminTableFilter";
 import "@/styles/admin-table.css";
@@ -21,8 +22,10 @@ export default function PrinterTable() {
   const [printers, setPrinters] = useState<Printer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [filterDefault, setFilterDefault] = useState("all");
+  const [filterStatuses, setFilterStatuses] = useState<string[]>(["all"]);
+  const [filterDefaults, setFilterDefaults] = useState<string[]>(["all"]);
+  const [filterTypes, setFilterTypes] = useState<string[]>(["all"]);
+  const [filterLocations, setFilterLocations] = useState<string[]>(["all"]);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -156,13 +159,25 @@ export default function PrinterTable() {
       printer.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
       printer.location.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
-      filterStatus === "all" ||
-      (filterStatus === "active" ? printer.isActive : !printer.isActive);
+      filterStatuses.includes("all") ||
+      (filterStatuses.includes("active") && printer.isActive) ||
+      (filterStatuses.includes("inactive") && !printer.isActive);
     const matchesDefault =
-      filterDefault === "all" ||
-      (filterDefault === "default" ? printer.isDefault : !printer.isDefault);
+      filterDefaults.includes("all") ||
+      (filterDefaults.includes("default") && printer.isDefault) ||
+      (filterDefaults.includes("not-default") && !printer.isDefault);
+    const matchesType =
+      filterTypes.includes("all") || filterTypes.includes(printer.type);
+    const matchesLocation =
+      filterLocations.includes("all") || filterLocations.includes(printer.location || "");
 
-    return matchesSearch && matchesStatus && matchesDefault;
+    return (
+      matchesSearch &&
+      matchesStatus &&
+      matchesDefault &&
+      matchesType &&
+      matchesLocation
+    );
   });
 
   const totalPages = Math.ceil(filteredPrinters.length / itemsPerPage);
@@ -172,7 +187,7 @@ export default function PrinterTable() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterStatus, filterDefault]);
+  }, [searchTerm, filterStatuses, filterDefaults, filterTypes, filterLocations]);
 
   return (
     <div className="admin-table-container">
@@ -182,17 +197,24 @@ export default function PrinterTable() {
         </div>
         <div className="admin-table-actions">
           <AdminTableFilter
-            activeCount={[filterStatus, filterDefault].filter((value) => value !== "all").length}
+            activeCount={
+              (filterStatuses.includes("all") ? 0 : filterStatuses.length) +
+              (filterDefaults.includes("all") ? 0 : filterDefaults.length) +
+              (filterTypes.includes("all") ? 0 : filterTypes.length) +
+              (filterLocations.includes("all") ? 0 : filterLocations.length)
+            }
             onReset={() => {
-              setFilterStatus("all");
-              setFilterDefault("all");
+              setFilterStatuses(["all"]);
+              setFilterDefaults(["all"]);
+              setFilterTypes(["all"]);
+              setFilterLocations(["all"]);
             }}
             sections={[
               {
                 id: "printer-status",
                 label: "Trạng thái",
-                value: filterStatus,
-                onChange: setFilterStatus,
+                value: filterStatuses,
+                onChange: setFilterStatuses,
                 options: [
                   { label: "Tất cả trạng thái", value: "all" },
                   { label: "Hoạt động", value: "active" },
@@ -202,12 +224,44 @@ export default function PrinterTable() {
               {
                 id: "printer-default",
                 label: "Mặc định",
-                value: filterDefault,
-                onChange: setFilterDefault,
+                value: filterDefaults,
+                onChange: setFilterDefaults,
                 options: [
                   { label: "Tất cả", value: "all" },
                   { label: "Máy in mặc định", value: "default" },
                   { label: "Không mặc định", value: "not-default" },
+                ],
+              },
+              {
+                id: "printer-type",
+                label: "Loại kết nối",
+                value: filterTypes,
+                onChange: setFilterTypes,
+                options: [
+                  { label: "Tất cả loại", value: "all" },
+                  ...Array.from(new Set(printers.map((printer) => printer.type))).map((type) => ({
+                    label: type,
+                    value: type,
+                  })),
+                ],
+              },
+              {
+                id: "printer-location",
+                label: "Vị trí",
+                value: filterLocations,
+                onChange: setFilterLocations,
+                options: [
+                  { label: "Tất cả vị trí", value: "all" },
+                  ...Array.from(
+                    new Set(
+                      printers
+                        .map((printer) => printer.location?.trim())
+                        .filter((location): location is string => Boolean(location)),
+                    ),
+                  ).map((location) => ({
+                    label: location,
+                    value: location,
+                  })),
                 ],
               },
             ]}
@@ -314,80 +368,110 @@ export default function PrinterTable() {
             </button>
             <h3>{editingId ? "Chỉnh Sửa Máy In" : "Thêm Máy In Mới"}</h3>
 
-            <div className="admin-form-group">
-              <label className="admin-form-label">Tên Máy In:</label>
-              <input
-                type="text"
-                className="admin-form-input"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
+            <div className="admin-modal-two-column-grid">
+              <div className="admin-form-group">
+                <label className="admin-form-label">Tên Máy In:</label>
+                <input
+                  type="text"
+                  className="admin-form-input"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                />
+              </div>
+              <div className="admin-form-group">
+                <label className="admin-form-label">Mã Máy In:</label>
+                <input
+                  type="text"
+                  className="admin-form-input"
+                  value={formData.code}
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                />
+              </div>
+              <div className="admin-form-group">
+                <label className="admin-form-label">Loại kết nối:</label>
+                <select
+                  className="admin-form-select"
+                  value={formData.type}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      type: e.target.value as PrinterFormData["type"],
+                    })
+                  }
+                >
+                  <option value="network">network</option>
+                  <option value="serial">serial</option>
+                  <option value="usb">usb</option>
+                </select>
+              </div>
+              <div className="admin-form-group">
+                <label className="admin-form-label">Địa chỉ IP:</label>
+                <input
+                  type="text"
+                  className="admin-form-input"
+                  value={formData.connection.host}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      connection: { ...formData.connection, host: e.target.value },
+                    })
+                  }
+                />
+              </div>
+              <div className="admin-form-group">
+                <label className="admin-form-label">Cổng (Port):</label>
+                <input
+                  type="number"
+                  className="admin-form-input"
+                  value={formData.connection.port}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      connection: { ...formData.connection, port: Number(e.target.value) },
+                    })
+                  }
+                />
+              </div>
+              <div className="admin-form-group">
+                <label className="admin-form-label">Vị trí:</label>
+                <input
+                  type="text"
+                  className="admin-form-input"
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                />
+              </div>
             </div>
-            <div className="admin-form-group">
-              <label className="admin-form-label">Mã Máy In:</label>
-              <input
-                type="text"
-                className="admin-form-input"
-                value={formData.code}
-                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-              />
-            </div>
-            <div className="admin-form-group">
-              <label className="admin-form-label">Địa chỉ IP:</label>
-              <input
-                type="text"
-                className="admin-form-input"
-                value={formData.connection.host}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    connection: { ...formData.connection, host: e.target.value },
-                  })
-                }
-              />
-            </div>
-            <div className="admin-form-group">
-              <label className="admin-form-label">Cổng (Port):</label>
-              <input
-                type="number"
-                className="admin-form-input"
-                value={formData.connection.port}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    connection: { ...formData.connection, port: Number(e.target.value) },
-                  })
-                }
-              />
-            </div>
-            <div className="admin-form-group">
-              <label className="admin-form-label">Vị trí:</label>
-              <input
-                type="text"
-                className="admin-form-input"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              />
-            </div>
-            <div
-              className="admin-form-group"
-              style={{ display: "flex", gap: "20px", alignItems: "center" }}
-            >
-              <label>
+            <div className="admin-checkbox-row">
+              <label className="admin-checkbox-card">
                 <input
                   type="checkbox"
                   checked={formData.isActive}
                   onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                 />
-                Hoạt động
+                <div>
+                  <div className="admin-checkbox-card-title">
+                    {formData.isActive ? "Hoạt động" : "Vô hiệu"}
+                  </div>
+                  <div className="admin-checkbox-card-description">
+                    Bật checkbox là hoạt động, bỏ chọn là vô hiệu
+                  </div>
+                </div>
               </label>
-              <label>
+              <label className="admin-checkbox-card">
                 <input
                   type="checkbox"
                   checked={formData.isDefault}
                   onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
                 />
-                Đặt làm mặc định
+                <div>
+                  <div className="admin-checkbox-card-title">
+                    {formData.isDefault ? "Mặc định" : "Không mặc định"}
+                  </div>
+                  <div className="admin-checkbox-card-description">
+                    Đánh dấu máy in mặc định cho hệ thống
+                  </div>
+                </div>
               </label>
             </div>
 
@@ -403,48 +487,13 @@ export default function PrinterTable() {
         </div>
       )}
 
-      {showDeleteConfirm && (
-        <div className="admin-modal">
-          <div
-            style={{
-              background: "white",
-              borderRadius: "8px",
-              padding: "30px",
-              maxWidth: "400px",
-              textAlign: "center",
-            }}
-          >
-            <h3>Xác Nhận Xóa</h3>
-            <p>Bạn có chắc chắn muốn xóa máy in này?</p>
-            <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
-              <button
-                onClick={handleConfirmDelete}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "#dc3545",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                }}
-              >
-                Xóa
-              </button>
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "#6c757d",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                }}
-              >
-                Hủy
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AdminConfirmDialog
+        isOpen={showDeleteConfirm}
+        title="Xác nhận xóa máy in"
+        message="Bạn có chắc chắn muốn xóa máy in này? Hành động này không thể hoàn tác."
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
 
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </div>

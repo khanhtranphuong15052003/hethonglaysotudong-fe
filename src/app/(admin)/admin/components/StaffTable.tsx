@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FiEdit, FiRepeat } from "react-icons/fi";
 import { RiDeleteBin6Line } from "react-icons/ri";
 import {
@@ -18,8 +18,10 @@ import {
 import { useToast } from "@/hooks/useToast";
 import { useAdminSessionGuard } from "@/hooks/useAdminSessionGuard";
 import ToastContainer from "@/components/ToastContainer";
+import AdminConfirmDialog from "@/components/admin/AdminConfirmDialog";
 import Pagination from "./Pagination";
 import AdminTableFilter from "./AdminTableFilter";
+import { getSequentialTagColorStyle } from "@/lib/adminTagColors";
 import "@/styles/admin-table.css";
 
 type ApiErrorShape = {
@@ -31,6 +33,8 @@ type ApiErrorShape = {
   };
   message?: string;
 };
+
+type CounterServiceOption = Counter["services"][number];
 
 const parseApiError = (err: unknown): string => {
   const apiError = err as ApiErrorShape;
@@ -63,10 +67,13 @@ export default function StaffTable() {
   const [counters, setCounters] = useState<Counter[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterCounterId, setFilterCounterId] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterCounterIds, setFilterCounterIds] = useState<string[]>(["all"]);
+  const [filterServiceIds, setFilterServiceIds] = useState<string[]>(["all"]);
+  const [filterStatuses, setFilterStatuses] = useState<string[]>(["all"]);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showStatusConfirm, setShowStatusConfirm] = useState(false);
+  const [pendingStatusChange, setPendingStatusChange] = useState<boolean | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [showServiceModal, setShowServiceModal] = useState(false);
@@ -175,6 +182,22 @@ export default function StaffTable() {
   const handleDelete = (staffId: string) => {
     setPendingDeleteId(staffId);
     setShowDeleteConfirm(true);
+  };
+
+  const handleStatusChange = (nextStatus: boolean) => {
+    setPendingStatusChange(nextStatus);
+    setShowStatusConfirm(true);
+  };
+
+  const handleConfirmStatus = () => {
+    if (pendingStatusChange !== null) {
+      setFormData((prev) => ({
+        ...prev,
+        isActive: pendingStatusChange,
+      }));
+    }
+    setShowStatusConfirm(false);
+    setPendingStatusChange(null);
   };
 
   const handleConfirmDelete = async () => {
@@ -324,20 +347,49 @@ export default function StaffTable() {
     }
   };
 
+  const allServices = useMemo(() => {
+    const map = new Map<string, CounterServiceOption>();
+    counters.forEach((counter) =>
+      counter.services?.forEach((service) => map.set(service._id, service)),
+    );
+
+    return Array.from(map.values()).sort(
+      (a, b) => (a.displayOrder || 0) - (b.displayOrder || 0),
+    );
+  }, [counters]);
+
+  const serviceColorMap = useMemo(
+    () =>
+      new Map(
+        allServices.map((service, index) => [
+          service._id,
+          getSequentialTagColorStyle(index),
+        ]),
+      ),
+    [allServices],
+  );
+
   const filteredStaff = staffList.filter((staff) => {
     const matchesSearch =
       staff.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
       staff.fullName.toLowerCase().includes(searchTerm.toLowerCase());
+      
     const matchesCounter =
-      filterCounterId === "all" ||
-      (filterCounterId === "unassigned"
-        ? !staff.counterId
-        : staff.counterId?._id === filterCounterId);
-    const matchesStatus =
-      filterStatus === "all" ||
-      (filterStatus === "active" ? staff.isActive : !staff.isActive);
+      filterCounterIds.includes("all") ||
+      (filterCounterIds.includes("unassigned") && !staff.counterId) ||
+      (staff.counterId && filterCounterIds.includes(staff.counterId._id));
+      
+    const matchesService = 
+      filterServiceIds.includes("all") ||
+      (filterServiceIds.includes("unassigned") && (!staff.effectiveServices || staff.effectiveServices.length === 0)) ||
+      (staff.effectiveServices && staff.effectiveServices.some(s => filterServiceIds.includes(s.id || s._id)));
 
-    return matchesSearch && matchesCounter && matchesStatus;
+    const matchesStatus =
+      filterStatuses.includes("all") ||
+      (filterStatuses.includes("active") && staff.isActive) ||
+      (filterStatuses.includes("inactive") && !staff.isActive);
+
+    return matchesSearch && matchesCounter && matchesService && matchesStatus;
   });
 
   const totalPages = Math.ceil(filteredStaff.length / itemsPerPage);
@@ -348,7 +400,7 @@ export default function StaffTable() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterCounterId, filterStatus]);
+  }, [searchTerm, filterCounterIds, filterServiceIds, filterStatuses]);
 
   const getCounterDisplay = (staff: Staff) => {
     if (!staff.counterId) return null;
@@ -365,17 +417,22 @@ export default function StaffTable() {
         </div>
         <div className="admin-table-actions">
           <AdminTableFilter
-            activeCount={[filterCounterId, filterStatus].filter((value) => value !== "all").length}
+            activeCount={
+              (filterCounterIds.includes("all") ? 0 : filterCounterIds.length) +
+              (filterServiceIds.includes("all") ? 0 : filterServiceIds.length) +
+              (filterStatuses.includes("all") ? 0 : filterStatuses.length)
+            }
             onReset={() => {
-              setFilterCounterId("all");
-              setFilterStatus("all");
+              setFilterCounterIds(["all"]);
+              setFilterServiceIds(["all"]);
+              setFilterStatuses(["all"]);
             }}
             sections={[
               {
                 id: "staff-counter",
                 label: "Phòng trực",
-                value: filterCounterId,
-                onChange: setFilterCounterId,
+                value: filterCounterIds,
+                onChange: setFilterCounterIds,
                 options: [
                   { label: "Tất cả phòng", value: "all" },
                   { label: "Chưa gán phòng", value: "unassigned" },
@@ -388,10 +445,24 @@ export default function StaffTable() {
                 ],
               },
               {
+                id: "staff-service",
+                label: "Quầy trực",
+                value: filterServiceIds,
+                onChange: setFilterServiceIds,
+                options: [
+                  { label: "Tất cả quầy", value: "all" },
+                  { label: "Không có quầy", value: "unassigned" },
+                  ...allServices.map((service) => ({
+                    label: `${service.name} (${service.code})`,
+                    value: service._id,
+                  })),
+                ],
+              },
+              {
                 id: "staff-status",
                 label: "Trạng thái",
-                value: filterStatus,
-                onChange: setFilterStatus,
+                value: filterStatuses,
+                onChange: setFilterStatuses,
                 options: [
                   { label: "Tất cả trạng thái", value: "all" },
                   { label: "Hoạt động", value: "active" },
@@ -416,7 +487,7 @@ export default function StaffTable() {
       {loading ? (
         <div className="admin-table-loading">Đang tải...</div>
       ) : (
-        <table className="admin-table">
+        <table className="admin-table staff-table">
           <thead>
             <tr>
               <th>Tên đăng nhập</th>
@@ -448,27 +519,26 @@ export default function StaffTable() {
                       Tất cả (mặc định)
                     </span>
                   ) : staff.effectiveServices && staff.effectiveServices.length > 0 ? (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                      {staff.effectiveServices.slice(0, 2).map((service) => (
+                    <div className="table-cell-counters">
+                      {staff.effectiveServices.map((service) => (
                         <span
                           key={service.id || service._id}
+                          className="table-cell-tag"
                           style={{
-                            background: "#e8f0fe",
-                            color: "#003366",
-                            borderRadius: 4,
-                            padding: "2px 7px",
-                            fontSize: "0.82em",
-                            fontWeight: 600,
+                            background:
+                              serviceColorMap.get(service.id || service._id)?.background ||
+                              "#bfdbfe",
+                            borderLeftColor:
+                              serviceColorMap.get(service.id || service._id)?.border ||
+                              "#2563eb",
+                            color:
+                              serviceColorMap.get(service.id || service._id)?.color ||
+                              "#1e3a8a",
                           }}
                         >
                           {service.name}
                         </span>
                       ))}
-                      {staff.effectiveServices.length > 2 && (
-                        <span style={{ color: "#888", fontSize: "0.82em" }}>
-                          +{staff.effectiveServices.length - 2}
-                        </span>
-                      )}
                     </div>
                   ) : staff.serviceRestrictionConfigured ? (
                     <span style={{ color: "#dc3545", fontSize: "0.9em" }}>
@@ -641,18 +711,22 @@ export default function StaffTable() {
                 )}
 
                 <div className="admin-form-group">
-                  <label>
+                  <label className="admin-checkbox-card">
                     <input
                       type="checkbox"
                       checked={formData.isActive}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          isActive: e.target.checked,
-                        })
-                      }
-                    />{" "}
-                    Kích hoạt tài khoản
+                      onChange={(e) => handleStatusChange(e.target.checked)}
+                    />
+                    <div>
+                      <div className="admin-checkbox-card-title">
+                        {formData.isActive
+                          ? "Kích hoạt tài khoản"
+                          : "Vô hiệu tài khoản"}
+                      </div>
+                      <div className="admin-checkbox-card-description">
+                        Bật checkbox để nhân viên đăng nhập và sử dụng tài khoản. Bỏ chọn để vô hiệu tài khoản này.
+                      </div>
+                    </div>
                   </label>
                 </div>
               </div>
@@ -670,48 +744,24 @@ export default function StaffTable() {
         </div>
       )}
 
-      {showDeleteConfirm && (
-        <div className="admin-modal">
-          <div
-            style={{
-              background: "white",
-              borderRadius: "8px",
-              padding: "30px",
-              maxWidth: "400px",
-              textAlign: "center",
-            }}
-          >
-            <h3>Xác Nhận Xóa</h3>
-            <p>Bạn có chắc chắn muốn xóa nhân viên này?</p>
-            <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
-              <button
-                onClick={handleConfirmDelete}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "#dc3545",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                }}
-              >
-                Xóa
-              </button>
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "#6c757d",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                }}
-              >
-                Hủy
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AdminConfirmDialog
+        isOpen={showStatusConfirm}
+        title="Xác thực thay đổi trạng thái"
+        message={`Bạn có chắc chắn muốn chuyển trạng thái tài khoản thành ${pendingStatusChange ? "Kích hoạt tài khoản" : "Vô hiệu tài khoản"}?`}
+        onConfirm={handleConfirmStatus}
+        onCancel={() => {
+          setShowStatusConfirm(false);
+          setPendingStatusChange(null);
+        }}
+      />
+
+      <AdminConfirmDialog
+        isOpen={showDeleteConfirm}
+        title="Xác nhận xóa người dùng"
+        message="Bạn có chắc chắn muốn xóa người dùng này? Hành động này không thể hoàn tác."
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
 
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
 

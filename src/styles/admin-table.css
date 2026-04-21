@@ -96,6 +96,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+}
+
+.admin-filter-badge.is-hidden {
+  visibility: hidden;
 }
 
 .admin-filter-popover {
@@ -103,7 +108,8 @@
   top: calc(100% + 10px);
   left: 0;
   z-index: 30;
-  width: 300px;
+  width: min(480px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
   background: #fff;
   border: 1px solid #dbe5f0;
   border-radius: 16px;
@@ -121,9 +127,10 @@
 }
 
 .admin-filter-popover__body {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+  align-items: start;
 }
 
 .admin-filter-field {
@@ -133,6 +140,7 @@
   color: #31475f;
   font-size: 13px;
   font-weight: 700;
+  min-width: 0;
 }
 
 .admin-filter-select {
@@ -324,6 +332,93 @@ table.counter-table td:nth-child(6) {
 table.counter-table th:nth-child(7),
 table.counter-table td:nth-child(7) {
   width: 10%;
+}
+
+/* Staff Table Column Widths */
+table.staff-table {
+  table-layout: auto;
+}
+
+table.staff-table th {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.35;
+}
+
+table.staff-table td {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+table.staff-table th:nth-child(1),
+table.staff-table td:nth-child(1) {
+  width: 10%;
+}
+
+table.staff-table th:nth-child(2),
+table.staff-table td:nth-child(2) {
+  width: 10%;
+}
+
+table.staff-table th:nth-child(3),
+table.staff-table td:nth-child(3) {
+  width: 10%;
+}
+
+table.staff-table th:nth-child(4),
+table.staff-table td:nth-child(4) {
+  width: 20%;
+}
+
+table.staff-table th:nth-child(5),
+table.staff-table td:nth-child(5) {
+  width: 10%;
+}
+
+table.staff-table th:nth-child(6),
+table.staff-table td:nth-child(6) {
+  width: 10%;
+}
+
+table.staff-table th:nth-child(7),
+table.staff-table td:nth-child(7) {
+  width: 10%;
+}
+
+table.staff-table td:nth-child(4) .table-cell-counters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(130px, max-content));
+  gap: 8px 10px;
+  align-items: start;
+}
+
+table.staff-table td:nth-child(4) .table-cell-tag {
+  max-width: 100%;
+  min-height: 32px;
+  justify-content: center;
+}
+
+table.staff-table td:nth-child(1),
+table.staff-table td:nth-child(2),
+table.staff-table td:nth-child(3),
+table.staff-table td:nth-child(6) {
+  white-space: nowrap;
+}
+
+table.staff-table td:nth-child(7) .table-actions {
+  justify-content: center;
+}
+
+table.staff-table th:nth-child(7),
+table.staff-table td:nth-child(7) {
+  text-align: center;
+}
+
+table.staff-table td:nth-child(7) {
+  padding-left: 8px;
+  padding-right: 8px;
 }
 
 table.admin-table tbody tr {
@@ -785,6 +880,51 @@ table.admin-table td {
   accent-color: #0d3b66;
 }
 
+.admin-checkbox-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 4px;
+}
+
+.admin-checkbox-card {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+  padding: 14px 16px;
+  border: 1px solid #dbe5f0;
+  border-radius: 14px;
+  background: #f8fbff;
+  cursor: pointer;
+}
+
+.admin-checkbox-card input[type="checkbox"] {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.admin-checkbox-card-title {
+  display: block;
+  margin-bottom: 4px;
+  color: #16324f;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.admin-checkbox-card-description {
+  display: block;
+  color: #607083;
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 400;
+}
+
+.admin-modal-two-column-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 18px;
+}
+
 .admin-form-actions {
   display: flex;
   gap: 10px;
@@ -841,6 +981,46 @@ table.admin-table td {
   .table-cell-counters span {
     padding: 4px 8px;
   }
+
+  table.staff-table th:nth-child(1),
+  table.staff-table td:nth-child(1) {
+    width: 15%;
+  }
+
+  table.staff-table th:nth-child(2),
+  table.staff-table td:nth-child(2) {
+    width: 16%;
+  }
+
+  table.staff-table th:nth-child(3),
+  table.staff-table td:nth-child(3) {
+    width: 15%;
+  }
+
+  table.staff-table th:nth-child(4),
+  table.staff-table td:nth-child(4) {
+    width: 24%;
+  }
+
+  table.staff-table th:nth-child(5),
+  table.staff-table td:nth-child(5) {
+    width: 10%;
+  }
+
+  table.staff-table th:nth-child(6),
+  table.staff-table td:nth-child(6) {
+    width: 15%;
+  }
+
+  table.staff-table th:nth-child(7),
+  table.staff-table td:nth-child(7) {
+    width: 5%;
+  }
+
+  table.staff-table td:nth-child(4) .table-cell-counters {
+    grid-template-columns: repeat(2, minmax(110px, 1fr));
+    gap: 6px 8px;
+  }
 }
 
 @media (max-width: 992px) {
@@ -870,7 +1050,8 @@ table.admin-table td {
   }
 
   .admin-filter-popover {
-    width: min(100%, 340px);
+    width: min(480px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
   }
 
   table.admin-table {
@@ -894,9 +1075,16 @@ table.admin-table td {
   table.service-table th,
   table.service-table td,
   table.counter-table th,
-  table.counter-table td {
+  table.counter-table td,
+  table.staff-table th,
+  table.staff-table td {
     width: auto !important; /* Reset width for horizontal scroll */
     min-width: 150px; /* Provide a sensible min-width */
+  }
+
+  table.staff-table td:nth-child(4) .table-cell-counters {
+    display: flex;
+    flex-wrap: wrap;
   }
 
   .admin-table-footer {
@@ -1039,8 +1227,19 @@ table.admin-table td {
 }
 
 /* RESPONSIVE */
+@media (max-width: 640px) {
+  .admin-filter-popover__body {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
   .admin-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-checkbox-row,
+  .admin-modal-two-column-grid {
     grid-template-columns: 1fr;
   }
 

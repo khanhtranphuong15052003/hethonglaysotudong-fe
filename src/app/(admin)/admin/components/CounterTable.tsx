@@ -16,6 +16,7 @@ import {
 } from "@/services/admin.service";
 import { useToast } from "@/hooks/useToast";
 import ToastContainer from "@/components/ToastContainer";
+import AdminConfirmDialog from "@/components/admin/AdminConfirmDialog";
 import Pagination from "./Pagination";
 import AdminTableFilter from "./AdminTableFilter";
 import { getSequentialTagColorStyle } from "@/lib/adminTagColors";
@@ -27,8 +28,8 @@ export default function CounterTable() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterServiceId, setFilterServiceId] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterServiceIds, setFilterServiceIds] = useState<string[]>(["all"]);
+  const [filterStatuses, setFilterStatuses] = useState<string[]>(["all"]);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
@@ -40,6 +41,8 @@ export default function CounterTable() {
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [showStatusConfirm, setShowStatusConfirm] = useState(false);
+  const [pendingStatusChange, setPendingStatusChange] = useState<boolean | null>(null);
   const [formData, setFormData] = useState({
     code: "",
     name: "",
@@ -121,6 +124,19 @@ export default function CounterTable() {
     setShowDeleteConfirm(true);
   };
 
+  const handleStatusChange = (nextStatus: boolean) => {
+    setPendingStatusChange(nextStatus);
+    setShowStatusConfirm(true);
+  };
+
+  const handleConfirmStatus = () => {
+    if (pendingStatusChange !== null) {
+      setFormData((prev) => ({ ...prev, isActive: pendingStatusChange }));
+    }
+    setPendingStatusChange(null);
+    setShowStatusConfirm(false);
+  };
+
   const handleConfirmDelete = async () => {
     if (pendingDeleteId) {
       try {
@@ -198,11 +214,12 @@ export default function CounterTable() {
       counter.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
       counter.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesService =
-      filterServiceId === "all" ||
-      counter.services.some((service) => service._id === filterServiceId);
+      filterServiceIds.includes("all") ||
+      counter.services.some((service) => filterServiceIds.includes(service._id));
     const matchesStatus =
-      filterStatus === "all" ||
-      (filterStatus === "active" ? counter.isActive : !counter.isActive);
+      filterStatuses.includes("all") ||
+      (filterStatuses.includes("active") && counter.isActive) ||
+      (filterStatuses.includes("inactive") && !counter.isActive);
 
     return matchesSearch && matchesService && matchesStatus;
   });
@@ -235,7 +252,7 @@ export default function CounterTable() {
   // Reset to first page when search changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterServiceId, filterStatus]);
+  }, [searchTerm, filterServiceIds, filterStatuses]);
 
   return (
     <div className="admin-table-container">
@@ -246,19 +263,20 @@ export default function CounterTable() {
         </div>
         <div className="admin-table-actions">
           <AdminTableFilter
-            activeCount={[filterServiceId, filterStatus].filter(
-              (value) => value !== "all",
-            ).length}
+            activeCount={
+              (filterServiceIds.includes("all") ? 0 : filterServiceIds.length) +
+              (filterStatuses.includes("all") ? 0 : filterStatuses.length)
+            }
             onReset={() => {
-              setFilterServiceId("all");
-              setFilterStatus("all");
+              setFilterServiceIds(["all"]);
+              setFilterStatuses(["all"]);
             }}
             sections={[
               {
                 id: "counter-service",
                 label: "Phòng",
-                value: filterServiceId,
-                onChange: setFilterServiceId,
+                value: filterServiceIds,
+                onChange: setFilterServiceIds,
                 options: [
                   { label: "Tất cả phòng", value: "all" },
                   ...[...services]
@@ -276,8 +294,8 @@ export default function CounterTable() {
               {
                 id: "counter-status",
                 label: "Trạng thái",
-                value: filterStatus,
-                onChange: setFilterStatus,
+                value: filterStatuses,
+                onChange: setFilterStatuses,
                 options: [
                   { label: "Tất cả trạng thái", value: "all" },
                   { label: "Hoạt động", value: "active" },
@@ -466,52 +484,21 @@ export default function CounterTable() {
 
                 <div className="admin-form-group">
                   <label className="admin-form-label">Trạng Thái:</label>
-                  <div
-                    style={{
-                      border: "1px solid #d0d0d0",
-                      borderRadius: "4px",
-                      padding: "12px",
-                      display: "flex",
-                      gap: "20px",
-                    }}
-                  >
-                    <label
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <input
-                        type="radio"
-                        name="isActive"
-                        checked={formData.isActive === true}
-                        onChange={() =>
-                          setFormData({ ...formData, isActive: true })
-                        }
-                        style={{ marginRight: "8px", cursor: "pointer" }}
-                      />
-                      Hoạt động
-                    </label>
-                    <label
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <input
-                        type="radio"
-                        name="isActive"
-                        checked={formData.isActive === false}
-                        onChange={() =>
-                          setFormData({ ...formData, isActive: false })
-                        }
-                        style={{ marginRight: "8px", cursor: "pointer" }}
-                      />
-                      Vô hiệu
-                    </label>
-                  </div>
+                  <label className="admin-checkbox-card">
+                    <input
+                      type="checkbox"
+                      checked={formData.isActive}
+                      onChange={(e) => handleStatusChange(e.target.checked)}
+                    />
+                    <div>
+                      <div className="admin-checkbox-card-title">
+                        {formData.isActive ? "Hoạt động" : "Vô hiệu"}
+                      </div>
+                      <div className="admin-checkbox-card-description">
+                        Bật checkbox là hoạt động, bỏ chọn là vô hiệu
+                      </div>
+                    </div>
+                  </label>
                 </div>
               </div>
 
@@ -576,64 +563,24 @@ export default function CounterTable() {
         </div>
       )}
 
-      {/* Delete Confirmation Dialog */}
-      {showDeleteConfirm && (
-        <div className="admin-modal">
-          <div
-            style={{
-              background: "white",
-              borderRadius: "8px",
-              padding: "30px",
-              maxWidth: "400px",
-              width: "90%",
-              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
-              textAlign: "center",
-            }}
-          >
-            <h3 style={{ marginTop: 0, marginBottom: "20px", color: "#333" }}>
-              Xác Nhận Xóa Quầy
-            </h3>
-            <p
-              style={{ marginBottom: "20px", color: "#666", fontSize: "14px" }}
-            >
-              Bạn có chắc chắn muốn xóa quầy này? Hành động này không thể hoàn
-              tác.
-            </p>
-            <div
-              style={{ display: "flex", gap: "10px", justifyContent: "center" }}
-            >
-              <button
-                onClick={handleConfirmDelete}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "#dc3545",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
-              >
-                Xóa vĩnh viễn
-              </button>
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "#6c757d",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
-              >
-                Hủy
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AdminConfirmDialog
+        isOpen={showStatusConfirm}
+        title="Xác thực thay đổi trạng thái"
+        message={`Bạn có chắc chắn muốn chuyển trạng thái phòng thành ${pendingStatusChange ? "Hoạt động" : "Vô hiệu"}?`}
+        onConfirm={handleConfirmStatus}
+        onCancel={() => {
+          setShowStatusConfirm(false);
+          setPendingStatusChange(null);
+        }}
+      />
+
+      <AdminConfirmDialog
+        isOpen={showDeleteConfirm}
+        title="Xác nhận xóa phòng"
+        message="Bạn có chắc chắn muốn xóa phòng này? Hành động này không thể hoàn tác."
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
 
       {/* Toast Container */}
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
