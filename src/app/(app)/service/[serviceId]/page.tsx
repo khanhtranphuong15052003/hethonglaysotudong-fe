@@ -92,11 +92,14 @@ function ServiceTicketContent() {
       return;
     }
 
-    if (!fullName.trim()) {
-      showToast("Vui lòng nhập họ tên", "error");
-      return;
-    }
-
+   if (!name) {
+  showToast("Vui lòng nhập họ tên", "error");
+  return;
+}
+if (fullName.trim().length > 25) {
+  showToast("Họ và tên không được vượt quá 25 ký tự", "error");
+  return;
+}
     if (!phoneNumber.trim()) {
       showToast("Vui lòng nhập số điện thoại", "error");
       return;
@@ -163,19 +166,8 @@ function ServiceTicketContent() {
   const handleReset = () => {
     router.push("/");
   };
+  const name = fullName.trim().slice(0, 25);
 
-  useEffect(() => {
-    if (step === "done" && nameContainerRef.current && nameRef.current) {
-      const containerWidth = nameContainerRef.current.offsetWidth;
-      const nameWidth = nameRef.current.scrollWidth;
-
-      if (nameWidth > containerWidth) {
-        setDisplayedName(formatName(fullName));
-      } else {
-        setDisplayedName(fullName);
-      }
-    }
-  }, [step, fullName]);
 
   const qrData = ticket
     ? `${service?.code ?? ""}-${getTicketDisplayNumber(ticket)}|${fullName}|${service?.name ?? ""}`
@@ -248,21 +240,24 @@ function ServiceTicketContent() {
               >
                 Họ và tên <span style={{ color: "red" }}>*</span>
               </label>
-              <input
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Nhập họ và tên"
-                style={{
-                  width: "100%",
-                  padding: 12,
-                  fontSize: 24,
-                  border: "1px solid #ccc",
-                  borderRadius: 4,
-                  boxSizing: "border-box",
-                  fontFamily: "inherit",
-                }}
-              />
+ <input
+  type="text"
+  value={fullName}
+  onChange={(e) => {
+    setFullName(e.target.value.slice(0, 25));
+  }}
+  placeholder="Nhập họ và tên"
+  maxLength={25}
+  style={{
+    width: "100%",
+    padding: 12,
+    fontSize: 24,
+    border: "1px solid #ccc",
+    borderRadius: 4,
+    boxSizing: "border-box",
+    fontFamily: "inherit",
+  }}
+/>
             </div>
 
            

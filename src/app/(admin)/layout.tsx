@@ -3,16 +3,16 @@
 import Link from "next/link";
 import { CSSProperties, ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import ConfirmModal from "@/components/ConfirmModal";
 import { clearAdminSession } from "@/lib/admin-auth";
 import {
-  // FiBarChart2,
   FiActivity,
   FiGrid,
   FiLogOut,
   FiPrinter,
   FiSettings,
-  FiUsers,
   FiTool,
+  FiUsers,
 } from "react-icons/fi";
 import { IconType } from "react-icons";
 
@@ -33,9 +33,8 @@ type NavItem = {
 const navItems: NavItem[] = [
   { href: "/admin", label: "Thống kê", icon: FiActivity },
   { href: "/admin/users", label: "Người dùng", icon: FiUsers },
-   { href: "/admin/counter", label: "Quản lý phòng", icon: FiGrid },
-  { href: "/admin/services", label: "Quản lý quầy", icon: FiTool  },
-
+  { href: "/admin/counter", label: "Quản lý phòng", icon: FiGrid },
+  { href: "/admin/services", label: "Quản lý quầy", icon: FiTool },
   { href: "/admin/printers", label: "Máy in", icon: FiPrinter },
   { href: "/admin/settings", label: "Cài đặt", icon: FiSettings },
 ];
@@ -45,10 +44,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
-  const isLoginPage = pathname === "/login" || pathname === "/admin/login";
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const isLoginPage = pathname === "/login";
+
   const handleSessionExpired = () => {
     clearAdminSession();
-    router.replace("/admin/login?reason=session_expired");
+    router.replace("/login?reason=session_expired");
   };
 
   useEffect(() => {
@@ -56,29 +57,33 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Check if user is logged in
     const token = localStorage.getItem("adminToken");
     const user = localStorage.getItem("adminUser");
 
     if (!token) {
-      router.replace("/admin/login");
-    } else {
-      try {
-        if (user) {
-          setAdminUser(JSON.parse(user));
-        }
-        setIsLoggedIn(true);
-      } catch {
-        handleSessionExpired();
-        return;
+      router.replace("/login");
+      return;
+    }
+
+    try {
+      if (user) {
+        setAdminUser(JSON.parse(user));
       }
+      setIsLoggedIn(true);
+    } catch {
+      handleSessionExpired();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoginPage]);
 
   const handleLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleConfirmLogout = () => {
+    setShowLogoutConfirm(false);
     clearAdminSession();
-    router.replace("/admin/login");
+    router.replace("/login");
   };
 
   const activeIndex = navItems.reduce((matchedIndex, item, index) => {
@@ -104,8 +109,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   }
 
   if (!isLoggedIn) {
-    return null; // prevent flash before redirect
+    return null;
   }
+
   return (
     <>
       <div
@@ -115,9 +121,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           flexDirection: "column",
         }}
       >
-        {/* Top Header with Logo and Title */}
-
-        {/* Main Content Container */}
         <div
           style={{
             display: "flex",
@@ -126,7 +129,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             minHeight: 0,
           }}
         >
-          {/* Sidebar */}
           <div
             className="admin-sidebar-container"
             style={{
@@ -138,7 +140,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               transition: "width 0.3s ease",
             }}
           >
-            {/* Logo in Sidebar */}
             <div
               className="admin-sidebar-logo"
               style={{
@@ -159,7 +160,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               />
             </div>
 
-            {/* Navigation */}
             <nav
               className="admin-side-nav"
               style={
@@ -210,7 +210,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </nav>
           </div>
 
-          {/* Main Content (85% width) */}
           <div
             style={{
               flex: 1,
@@ -247,7 +246,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 style={{ display: "flex", alignItems: "center" }}
               >
                 <div className="user-name" style={{ color: "#666" }}>
-                   {adminUser?.fullName || "Admin"}
+                  {adminUser?.fullName || "Admin"}
                 </div>
                 <button
                   onClick={handleLogout}
@@ -277,7 +276,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               </div>
             </div>
 
-            {/* Content Area */}
             <div
               style={{
                 flex: 1,
@@ -292,6 +290,14 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={showLogoutConfirm}
+        title="Xác Nhận Đăng Xuất"
+        message="Bạn có chắc chắn muốn đăng xuất khỏi hệ thống này?"
+        onConfirm={handleConfirmLogout}
+        onCancel={() => setShowLogoutConfirm(false)}
+      />
     </>
   );
 }

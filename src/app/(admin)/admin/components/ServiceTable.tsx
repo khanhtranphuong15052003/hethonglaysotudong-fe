@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useState, useCallback } from "react";
 import { FiEdit } from "react-icons/fi";
@@ -46,7 +46,7 @@ export default function ServiceTable() {
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; // Đặt 10 items mỗi trang để chuyên nghiệp hơn, hoặc 1 theo yêu cầu
+  const itemsPerPage = 10;
 
   const [showStatusConfirm, setShowStatusConfirm] = useState(false);
   const [pendingStatusChange, setPendingStatusChange] = useState<
@@ -476,17 +476,17 @@ export default function ServiceTable() {
           Hiển thị {paginatedServices.length} trên tổng số {filteredServices.length}{" "}
           kết quả
         </span>
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-        />
       </div>
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
       {showModal && (
         <div className="admin-modal">
           <div className="admin-modal-content">
             <button className="admin-modal-close" onClick={handleCloseModal}>
-              ×
+              Ă—
             </button>
             <h3 style={{ marginTop: 0, marginBottom: 20 }}>
               {editingId ? "Chỉnh Sửa Quầy" : "Thêm Quầy Mới"}
@@ -697,7 +697,7 @@ export default function ServiceTable() {
                       marginTop: "8px",
                     }}
                   >
-                    {/* Đã chọn: <strong>{formData.icon || "Chưa chọn"}</strong> */}
+                    Đã chọn: <strong>{formData.icon || "Chưa chọn"}</strong>
                   </div>
                 </div>
 
@@ -719,16 +719,7 @@ export default function ServiceTable() {
               <div className="admin-form-group" style={{ marginBottom: 0 }}>
                 <label className="admin-form-label">Thêm quầy vào phòng đã có:</label>
                 <div
-                  style={{
-                    border: "1px solid #d0d0d0",
-                    borderRadius: "4px",
-                    padding: "12px",
-                    maxHeight: "160px",
-                    overflowY: "auto",
-                    display: "grid",
-                    gridTemplateColumns: "repeat(3, minmax(180px, 1fr))",
-                    gap: "10px 14px",
-                  }}
+                  className="admin-counter-grid"
                 >
                   {counters.length === 0 ? (
                     <span style={{ color: "#999", fontSize: "14px" }}>
@@ -900,3 +891,5 @@ export default function ServiceTable() {
     </div>
   );
 }
+
+

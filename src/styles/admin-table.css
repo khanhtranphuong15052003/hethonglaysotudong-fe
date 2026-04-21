@@ -7,7 +7,7 @@
   margin: 20px;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 40px - 70px); /* Adjust based on your layout's other elements */
+  min-height: calc(100vh - 40px - 70px);
 }
 
 .admin-page-heading {
@@ -23,7 +23,7 @@
 
 .admin-table-body {
   flex-grow: 1;
-  overflow-y: auto; /* Add scroll for vertical overflow */
+  overflow: visible;
   position: relative;
 }
 
@@ -480,10 +480,70 @@ table.admin-table td {
   background: #f8f9fa;
   border-top: 1px solid #e8e8e8;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   font-size: 14px;
   color: #666;
+}
+
+.admin-table-footer-inline {
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 20px;
+  background: #fff;
+}
+
+.admin-pagination-inline {
+  padding: 0;
+  background: transparent;
+  justify-content: flex-end;
+}
+
+.admin-pagination-nav,
+.admin-pagination-page {
+  min-width: 38px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 6px;
+  border: 1px solid #d7dce3;
+  background: #fff;
+  color: #1f3c5b;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.admin-pagination-nav:hover,
+.admin-pagination-page:hover {
+  border-color: #003366;
+  color: #003366;
+}
+
+.admin-pagination-page.is-active {
+  background: #003366;
+  border-color: #003366;
+  color: #fff;
+  font-weight: 700;
+}
+
+.admin-pagination-nav:disabled,
+.admin-pagination-page:disabled {
+  color: #c0c7d1;
+  border-color: #e1e5ea;
+  background: #fff;
+  cursor: not-allowed;
 }
 
 .admin-table-pagination {
@@ -843,6 +903,15 @@ table.admin-table td {
     flex-direction: column;
     gap: 10px;
   }
+
+  .admin-table-footer-inline {
+    align-items: stretch;
+  }
+
+  .admin-pagination-inline {
+    justify-content: center;
+    padding: 0;
+  }
 }
 
 @media (max-width: 768px) {
@@ -899,6 +968,19 @@ table.admin-table td {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.admin-counter-grid {
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  padding: 12px;
+  max-height: 172px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  grid-template-rows: repeat(3, auto);
+  gap: 10px 14px;
+  align-content: start;
 }
 
 .admin-service-item {
@@ -960,5 +1042,10 @@ table.admin-table td {
 @media (max-width: 768px) {
   .admin-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .admin-counter-grid {
+    grid-template-columns: repeat(2, minmax(150px, 1fr));
+    grid-template-rows: none;
   }
 }

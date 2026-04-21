@@ -385,17 +385,18 @@ export default function CounterTable() {
           </tbody>
         </table>
       </div>
-      <div className="admin-table-footer">
+      <div className="admin-table-footer admin-table-footer-inline">
         <span>
           Hiển thị {paginatedCounters.length} trên tổng số {filteredCounters.length}{" "}
           kết quả
         </span>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          className="admin-pagination-inline"
+        />
       </div>
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={handlePageChange}
-      />
       {showModal && (
         <div className="admin-modal">
           <div className="admin-modal-content">

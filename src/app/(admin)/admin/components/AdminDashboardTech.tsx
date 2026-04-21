@@ -427,7 +427,7 @@ export default function AdminDashboardTech() {
         if (fetchError instanceof Error && fetchError.message === DASHBOARD_AUTH_EXPIRED_ERROR) {
           localStorage.removeItem("adminToken");
           localStorage.removeItem("adminUser");
-          router.push("/admin/login?reason=session_expired");
+          router.push("/login?reason=session_expired");
           return;
         }
 

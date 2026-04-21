@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Toast from "@/components/Toast";
 import { loginAdmin } from "@/services/auth.service";
 
+const MAX_CREDENTIAL_LENGTH = 25;
+
 function AdminLoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -34,8 +36,10 @@ function AdminLoginContent() {
     setLoading(true);
 
     try {
-      // Validate input
-      if (!username.trim() || !password.trim()) {
+      const trimmedUsername = username.trim();
+      const trimmedPassword = password.trim();
+
+      if (!trimmedUsername || !trimmedPassword) {
         setToast({
           isOpen: true,
           message: "Vui lòng nhập tên đăng nhập và mật khẩu",
@@ -45,17 +49,29 @@ function AdminLoginContent() {
         return;
       }
 
-      // Call API login
+      if (
+        trimmedUsername.length > MAX_CREDENTIAL_LENGTH ||
+        trimmedPassword.length > MAX_CREDENTIAL_LENGTH
+      ) {
+        setToast({
+          isOpen: true,
+          message: "Tên đăng nhập và mật khẩu chỉ được tối đa 25 ký tự",
+          type: "error",
+        });
+        setLoading(false);
+        return;
+      }
+
       const data = await loginAdmin({
-        username: username.trim(),
-        password: password.trim(),
+        username: trimmedUsername,
+        password: trimmedPassword,
       });
 
       if (data.success && data.data.token) {
         if (data.data.user.role !== "admin") {
           throw new Error("Tài khoản này không có quyền quản trị");
         }
-        // Lưu token và user info vào localStorage
+
         if (typeof window !== "undefined") {
           localStorage.setItem("adminToken", data.data.token);
           localStorage.setItem("adminUser", JSON.stringify(data.data.user));
@@ -67,14 +83,14 @@ function AdminLoginContent() {
           type: "success",
         });
 
-        // Redirect tới trang admin sau 1 giây
         setTimeout(() => {
           router.push("/admin");
         }, 1000);
       } else {
         setToast({
           isOpen: true,
-          message: data.message || "Tên đăng nhập hoặc mật khẩu không đúng",
+          message:
+            data.message || "Tên đăng nhập hoặc mật khẩu không đúng",
           type: "error",
         });
       }
@@ -82,7 +98,10 @@ function AdminLoginContent() {
       console.error("Login error:", error);
       setToast({
         isOpen: true,
-        message: "Lỗi kết nối với server, vui lòng thử lại",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Lỗi kết nối với server, vui lòng thử lại",
         type: "error",
       });
     } finally {
@@ -113,8 +132,7 @@ function AdminLoginContent() {
         ĐĂNG NHẬP HỆ THỐNG
       </h1>
 
-      <form onSubmit={handleLogin}>
-        {/* Username */}
+      <form onSubmit={handleLogin} noValidate>
         <div style={{ marginBottom: 24 }}>
           <label
             style={{
@@ -131,6 +149,7 @@ function AdminLoginContent() {
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
+            maxLength={MAX_CREDENTIAL_LENGTH}
             placeholder="Nhập tên đăng nhập"
             style={{
               width: "100%",
@@ -144,7 +163,6 @@ function AdminLoginContent() {
           />
         </div>
 
-        {/* Password */}
         <div style={{ marginBottom: 28 }}>
           <label
             style={{
@@ -162,6 +180,7 @@ function AdminLoginContent() {
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              maxLength={MAX_CREDENTIAL_LENGTH}
               placeholder="Nhập mật khẩu"
               style={{
                 width: "100%",
@@ -199,7 +218,6 @@ function AdminLoginContent() {
           </div>
         </div>
 
-        {/* Submit button */}
         <button
           type="submit"
           disabled={loading}
@@ -236,8 +254,6 @@ function AdminLoginContent() {
         type={toast.type}
         onClose={() => setToast({ ...toast, isOpen: false })}
       />
-
-      {/* Demo Info */}
     </div>
   );
 }

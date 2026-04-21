@@ -20,7 +20,7 @@ export function useAdminSessionGuard() {
         isAuthExpiredMessage(message)
       ) {
         clearAdminSession();
-        router.replace("/admin/login?reason=session_expired");
+        router.replace("/login?reason=session_expired");
         return true;
       }
 

@@ -29,5 +29,5 @@ export const clearAdminSession = () => {
 export const redirectToAdminLogin = () => {
   if (typeof window === "undefined") return;
   clearAdminSession();
-  window.location.replace("/admin/login?reason=session_expired");
+  window.location.replace("/login?reason=session_expired");
 };
