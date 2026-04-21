@@ -16,6 +16,15 @@ interface DisplayTicket extends Ticket {
   formattedNumber?: string;
 }
 
+const MAX_FULL_NAME_LENGTH = 25;
+
+const sanitizeFullName = (value: string) =>
+  value
+    .replace(/[^\p{L}\s]/gu, "")
+    .replace(/\s+/g, " ")
+    .replace(/^\s+/g, "")
+    .slice(0, MAX_FULL_NAME_LENGTH);
+
 const getTicketDisplayNumber = (ticket?: Partial<DisplayTicket> | null) =>
   ticket?.displayNumber ||
   ticket?.formattedNumber ||
@@ -89,6 +98,11 @@ function ServiceTicketContent() {
     e.preventDefault();
 
     if (isSubmitting) {
+      return;
+    }
+
+    if (fullName !== sanitizeFullName(fullName)) {
+      showToast("Họ và tên chỉ được nhập chữ cái, không dùng ký tự đặc biệt", "error");
       return;
     }
 
@@ -166,7 +180,7 @@ if (fullName.trim().length > 25) {
   const handleReset = () => {
     router.push("/");
   };
-  const name = fullName.trim().slice(0, 25);
+  const name = fullName.trim().slice(0, MAX_FULL_NAME_LENGTH);
 
 
   const qrData = ticket
@@ -244,10 +258,17 @@ if (fullName.trim().length > 25) {
   type="text"
   value={fullName}
   onChange={(e) => {
-    setFullName(e.target.value.slice(0, 25));
+    setFullName(sanitizeFullName(e.target.value));
+  }}
+  onPaste={(e) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData("text");
+    setFullName((prev) => sanitizeFullName(`${prev} ${pastedText}`.trim()));
   }}
   placeholder="Nhập họ và tên"
-  maxLength={25}
+  maxLength={MAX_FULL_NAME_LENGTH}
+  inputMode="text"
+  autoComplete="name"
   style={{
     width: "100%",
     padding: 12,
