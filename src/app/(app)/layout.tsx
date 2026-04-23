@@ -1,5 +1,5 @@
-import Clock from "../components/Clock";
 import { ReactNode } from "react";
+import Clock from "../components/Clock";
 
 export default function AppLayout({
   children,
@@ -8,45 +8,44 @@ export default function AppLayout({
 }>) {
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
-      {/* HEADER */}
       <header
         style={{
-          height: 80,
+          minHeight: 96,
           display: "flex",
           alignItems: "center",
+          justifyContent: "space-between",
+          gap: 16,
           padding: "20px 20px 0",
           fontSize: 20,
-          position: "relative",
-          justifyContent: "center",
         }}
       >
-        {/* Logo và Text - căn giữa */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 10,
+            gap: 6,
+            flex: 1,
+            minWidth: 0,
           }}
         >
-          {/* Logo */}
           <img
             src="/assets/logotoaan.png"
             alt="Logo"
             style={{
-              height: 80,
+              height: 68,
               width: "auto",
               objectFit: "contain",
               flexShrink: 0,
             }}
           />
 
-          {/* Text */}
           <div
             style={{
               display: "flex",
               flexDirection: "column",
               justifyContent: "center",
               alignItems: "flex-start",
+              minWidth: 0,
             }}
           >
             <h1 style={{ margin: 0, fontSize: 32, fontWeight: 750 }}>
@@ -65,29 +64,24 @@ export default function AppLayout({
           </div>
         </div>
 
-        {/* Clock ở bên phải - fixed position */}
         <div
           style={{
-            position: "absolute",
-            right: 20,
-            top: "50%",
-            transform: "translateY(-50%)",
             fontSize: 18,
             whiteSpace: "nowrap",
             display: "flex",
             flexDirection: "column",
             alignItems: "flex-end",
+            flexShrink: 0,
           }}
         >
           <Clock />
         </div>
       </header>
 
-      {/* CONTENT */}
       <main
         style={{
           flex: 1,
-          padding: "2rem clamp(4px, 3.4vw, 64px) 20px", // Added top padding
+          padding: "2rem clamp(4px, 3.4vw, 64px) 20px",
           minHeight: 0,
           overflow: "hidden",
         }}

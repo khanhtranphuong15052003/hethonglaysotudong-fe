@@ -57,6 +57,19 @@ export interface SocketErrorPayload {
   message: string;
 }
 
+export interface TicketBackToWaitingPayload {
+  ticketId: string;
+  number: number;
+  formattedNumber?: string;
+  displayNumber?: string;
+  customerName: string;
+  serviceName: string;
+  counterId?: string;
+  counterName?: string;
+  position: "front" | "back";
+  returnedAt?: string;
+}
+
 export function createStaffSocket() {
   return io(SOCKET_BASE_URL, {
     transports: ["websocket"],
@@ -103,5 +116,15 @@ export function onSocketError(
   socket.on("socket-error", handler);
   return () => {
     socket.off("socket-error", handler);
+  };
+}
+
+export function onTicketBackToWaiting(
+  socket: Socket,
+  handler: (payload: TicketBackToWaitingPayload) => void,
+) {
+  socket.on("ticket-back-to-waiting", handler);
+  return () => {
+    socket.off("ticket-back-to-waiting", handler);
   };
 }

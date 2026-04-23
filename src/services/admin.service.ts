@@ -211,6 +211,11 @@ export interface TtsSettings {
   enabled: boolean;
 }
 
+export interface AutoResetSettings {
+  enabled: boolean;
+  time: string;
+}
+
 const extractTtsEnabled = (payload: unknown): boolean | null => {
   if (!payload || typeof payload !== "object") {
     return null;
@@ -301,6 +306,142 @@ export async function updateTtsSettings(enabled: boolean): Promise<TtsSettings> 
   }
 
   return { enabled };
+}
+
+const extractAutoResetSettings = (payload: unknown): AutoResetSettings | null => {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const record = payload as Record<string, unknown>;
+  const enabled =
+    typeof record.enabled === "boolean"
+      ? record.enabled
+      : typeof record.auto_reset_enabled === "boolean"
+        ? record.auto_reset_enabled
+        : typeof record.autoResetEnabled === "boolean"
+          ? record.autoResetEnabled
+          : null;
+  const time =
+    typeof record.time === "string"
+      ? record.time
+      : typeof record.auto_reset_time === "string"
+        ? record.auto_reset_time
+        : typeof record.autoResetTime === "string"
+          ? record.autoResetTime
+          : null;
+
+  if (enabled !== null && time !== null) {
+    return { enabled, time };
+  }
+
+  if (record.data && typeof record.data === "object") {
+    return extractAutoResetSettings(record.data);
+  }
+
+  if (record.setting && typeof record.setting === "object") {
+    return extractAutoResetSettings(record.setting);
+  }
+
+  if (record.result && typeof record.result === "object") {
+    return extractAutoResetSettings(record.result);
+  }
+
+  return null;
+};
+
+export async function getAutoResetSettings(): Promise<AutoResetSettings> {
+  const response = await fetch(`${API_BASE}/admin/settings/auto-reset`, {
+    headers: getAuthHeaders(),
+  });
+
+  const data = await parseJsonResponse<{
+    success?: boolean;
+    data?: AutoResetSettings;
+    message?: string;
+  }>(response);
+
+  const settings = extractAutoResetSettings(data);
+  if (settings) {
+    return settings;
+  }
+
+  if (data.success === false) {
+    throw new Error(data.message || "Không lấy được cấu hình tự động reset");
+  }
+
+  throw new Error("Dữ liệu tự động reset không hợp lệ");
+}
+
+export async function updateAutoResetEnabled(
+  enabled: boolean,
+): Promise<AutoResetSettings> {
+  const response = await fetch(
+    `${API_BASE}/admin/settings/auto-reset/enabled`,
+    {
+      method: "PATCH",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ enabled }),
+    },
+  );
+
+  const data = await parseJsonResponse<{
+    success?: boolean;
+    data?: {
+      auto_reset_enabled?: boolean;
+      enabled?: boolean;
+    };
+    message?: string;
+  }>(response);
+
+  if (data.success === false) {
+    throw new Error(data.message || "Cập nhật trạng thái tự động reset thất bại");
+  }
+
+  const current = await getAutoResetSettings();
+  return {
+    ...current,
+    enabled:
+      typeof data.data?.auto_reset_enabled === "boolean"
+        ? data.data.auto_reset_enabled
+        : typeof data.data?.enabled === "boolean"
+          ? data.data.enabled
+          : enabled,
+  };
+}
+
+export async function updateAutoResetTime(
+  time: string,
+): Promise<AutoResetSettings> {
+  const response = await fetch(`${API_BASE}/admin/settings/auto-reset/time`, {
+    method: "PATCH",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ time }),
+  });
+
+  const data = await parseJsonResponse<{
+    success?: boolean;
+    data?: {
+      auto_reset_time?: string;
+      time?: string;
+    };
+    message?: string;
+  }>(response);
+
+  if (data.success === false) {
+    throw new Error(data.message || "Cập nhật giờ tự động reset thất bại");
+  }
+
+  const current = await getAutoResetSettings();
+  return {
+    ...current,
+    time:
+      typeof data.data?.auto_reset_time === "string"
+        ? data.data.auto_reset_time
+        : typeof data.data?.time === "string"
+          ? data.data.time
+          : time,
+  };
 }
 
 // ==================== PRINTERS ====================

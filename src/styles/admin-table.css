@@ -700,9 +700,9 @@ table.admin-table td {
 
 .admin-confirm-dialog {
   background: #fff;
-  width: min(100%, 420px);
-  border-radius: 20px;
-  box-shadow: 0 28px 70px rgba(8, 27, 54, 0.24);
+  width: min(100%, 840px);
+  border-radius: 28px;
+  box-shadow: 0 32px 90px rgba(8, 27, 54, 0.28);
   border: 1px solid rgba(0, 51, 102, 0.08);
   overflow: hidden;
 }
@@ -710,41 +710,51 @@ table.admin-table td {
 .admin-confirm-header {
   background: #003366;
   color: #fff;
-  padding: 22px 24px;
+  padding: 30px 36px;
 }
 
 .admin-confirm-header h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: 38px;
   font-weight: 700;
+  font-family: Arial, Helvetica, sans-serif;
+  letter-spacing: 0;
+  text-rendering: optimizeLegibility;
 }
 
 .admin-confirm-body {
-  padding: 24px;
+  padding: 34px 36px 30px;
   color: #31475f;
-  line-height: 1.6;
+  line-height: 1.75;
 }
 
 .admin-confirm-body p {
   margin: 0;
+  font-size: 32px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 400;
+  text-rendering: optimizeLegibility;
 }
 
 .admin-confirm-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 18px 18px 20px;
+  justify-content: stretch;
+  gap: 18px;
+  padding: 24px 36px 32px;
   border-top: 1px solid #e6edf5;
 }
 
 .admin-confirm-actions button {
-  min-width: 112px;
-  height: 44px;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 76px;
   padding: 0 20px;
   border: none;
-  border-radius: 14px;
-  font-size: 14px;
-  font-weight: 600;
+  border-radius: 18px;
+  font-size: 28px;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 0;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -1129,6 +1139,31 @@ table.admin-table td {
 
   .admin-confirm-actions button {
     width: 100%;
+  }
+
+  .admin-confirm-dialog {
+    width: min(100%, 95vw);
+  }
+
+  .admin-confirm-header {
+    padding: 22px 24px;
+  }
+
+  .admin-confirm-header h2 {
+    font-size: 26px;
+  }
+
+  .admin-confirm-body {
+    padding: 24px;
+  }
+
+  .admin-confirm-body p {
+    font-size: 20px;
+  }
+
+  .admin-confirm-actions button {
+    height: 58px;
+    font-size: 20px;
   }
 }
 .admin-modal-content {

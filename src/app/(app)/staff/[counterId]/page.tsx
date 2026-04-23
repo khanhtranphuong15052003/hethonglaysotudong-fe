@@ -6,6 +6,7 @@ import { Ticket, Counter, Service } from "@/types/queue";
 import Toast from "@/components/Toast";
 import ConfirmModal from "@/components/ConfirmModal";
 import {
+  backTicketToWaitingApi,
   getStaffDisplay,
   callTicketById,
   completeTicketApi,
@@ -25,14 +26,16 @@ import {
 } from "@/lib/staff-socket";
 
 const getTicketDisplayNumber = (ticket?: Ticket | null) =>
-  ticket?.displayNumber || ticket?.formattedNumber || String(ticket?.number ?? "").padStart(3, "0");
+  ticket?.displayNumber ||
+  ticket?.formattedNumber ||
+  String(ticket?.number ?? "").padStart(3, "0");
 
 export default function StaffCounterPage() {
   const params = useParams();
   const router = useRouter();
   const counterId = params.counterId as string;
   const [hovered, setHovered] = useState<string | null>(null);
-  const [counter, setCounter] = useState<Counter | null>(null);
+  const [, setCounter] = useState<Counter | null>(null);
   const [staffName, setStaffName] = useState<string>("");
   const [staffId, setStaffId] = useState<string>("");
   const [restricted, setRestricted] = useState<boolean>(false);
@@ -62,7 +65,7 @@ export default function StaffCounterPage() {
     isOpen: false,
     title: "",
     message: "",
-    onConfirm: () => { },
+    onConfirm: () => {},
   });
 
   const showToast = (
@@ -112,6 +115,17 @@ export default function StaffCounterPage() {
     }
   };
 
+  const handleRecallListRefresh = useCallback(async () => {
+    try {
+      const res = await getRecallList();
+      if (res.success) {
+        setRecallTickets(res.data || []);
+      }
+    } catch (err) {
+      console.error("Failed to refresh recall list:", err);
+    }
+  }, []);
+
   useEffect(() => {
     const token =
       typeof window !== "undefined" ? sessionStorage.getItem("staffToken") : null;
@@ -142,6 +156,7 @@ export default function StaffCounterPage() {
             router.push("/staff/login?error=unauthorized");
             return;
           }
+
           applySnapshot({
             counter,
             services,
@@ -150,9 +165,13 @@ export default function StaffCounterPage() {
             totalWaiting,
             staffName,
           });
-          applyAdditionalInfo({ staffId, serviceRestrictionConfigured, assignedServices });
+          applyAdditionalInfo({
+            staffId,
+            serviceRestrictionConfigured,
+            assignedServices,
+          });
           setAuthenticated(true);
-          handleRecallListRefresh();
+          void handleRecallListRefresh();
         } else {
           sessionStorage.removeItem("staffToken");
           router.push("/staff/login?error=session_expired");
@@ -171,7 +190,7 @@ export default function StaffCounterPage() {
     };
 
     void loadInitialData();
-  }, [counterId, handleSessionExpired, router]);
+  }, [counterId, handleRecallListRefresh, handleSessionExpired, router]);
 
   useEffect(() => {
     if (!authenticated) {
@@ -183,8 +202,6 @@ export default function StaffCounterPage() {
     const unsubscribe = onStaffDisplayUpdated(
       socket,
       (payload: StaffDisplayUpdatedPayload) => {
-        // Chỉ chấp nhận event dành riêng cho staff này
-        // Event từ room staff-display-{staffId} luôn có payload.staffId khớp
         if (payload.staffId !== staffId) {
           return;
         }
@@ -196,18 +213,20 @@ export default function StaffCounterPage() {
           waitingTickets: payload.data.waitingTickets as Ticket[],
           totalWaiting: payload.data.totalWaiting,
         });
+
         if (payload.data.recallTickets) {
           setRecallTickets(payload.data.recallTickets as Ticket[]);
         }
       },
     );
+
     const unsubscribeJoined = onJoinedCounterRoom(socket, (payload) => {
       console.log("Joined counter room on staff screen:", payload);
     });
+
     const unsubscribeSocketError = onSocketError(socket, (payload) => {
       console.error("Staff socket room error:", payload);
     });
-
     socket.on("connect", () => {
       joinCounterRoom(socket, counterId, staffId);
       console.log("Socket connected on staff screen");
@@ -230,7 +249,6 @@ export default function StaffCounterPage() {
   }, [authenticated, counterId, staffId]);
 
   const handleCallNext = async () => {
-    // Nếu đang có vé xử lý → gọi lại vé đó
     if (currentTicket) {
       try {
         const response = await recallProcessingTicketApi(currentTicket.id);
@@ -253,7 +271,6 @@ export default function StaffCounterPage() {
       return;
     }
 
-    // Lấy vé đầu tiên trong danh sách chờ (đã được lọc theo service của staff)
     const nextTicket = waitingTickets[0];
     if (!nextTicket) {
       showToast("Không có vé nào trong hàng chờ!", "warning");
@@ -263,7 +280,7 @@ export default function StaffCounterPage() {
     try {
       const response = await callTicketById(nextTicket.id, counterId);
       if (response.success) {
-        showToast(response.message, "success");
+        showToast(response.message || "Đang gọi vé!", "success");
       } else {
         showToast(response.message || "Không thể gọi vé!", "error");
       }
@@ -281,14 +298,24 @@ export default function StaffCounterPage() {
     }
   };
 
-  const handleRecallListRefresh = async () => {
+  const handleCallWaitingTicket = async (ticketId: string) => {
     try {
-      const res = await getRecallList();
-      if (res.success) {
-        setRecallTickets(res.data || []);
+      const response = await callTicketById(ticketId, counterId);
+      if (response.success) {
+        showToast(response.message || "Đang gọi vé!", "success");
+      } else {
+        showToast(response.message || "Không thể gọi vé!", "error");
       }
-    } catch (err) {
-      console.error("Failed to refresh recall list:", err);
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === AUTH_EXPIRED_ERROR) {
+          handleSessionExpired();
+          return;
+        }
+        showToast(error.message, "error");
+        return;
+      }
+      showToast("Lỗi hệ thống khi đang gọi vé!", "error");
     }
   };
 
@@ -377,6 +404,41 @@ export default function StaffCounterPage() {
             showToast(error.message, "error");
           } else {
             showToast("Lỗi hệ thống khi bỏ qua vé!", "error");
+          }
+        } finally {
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
+  };
+
+  const handleBackToWaiting = async () => {
+    if (!currentTicket) {
+      showToast("Không có vé nào đang được xử lý!", "error");
+      return;
+    }
+
+    setConfirmModal({
+      isOpen: true,
+      title: "Xác nhận trả lại",
+      message: `Xác nhận trả số ${getTicketDisplayNumber(currentTicket)} về hàng chờ?\nVé sẽ được đưa lên đầu hàng chờ.`,
+      onConfirm: async () => {
+        try {
+          const response = await backTicketToWaitingApi(currentTicket.id, "front");
+          if (response.success) {
+            showToast(response.message || "Đã trả vé về hàng chờ", "success");
+          } else {
+            showToast(response.message || "Không thể trả vé về hàng chờ!", "error");
+          }
+        } catch (error) {
+          if (error instanceof Error) {
+            if (error.message === AUTH_EXPIRED_ERROR) {
+              handleSessionExpired();
+              return;
+            }
+            showToast(error.message, "error");
+          } else {
+            showToast("Lỗi hệ thống khi trả vé về hàng chờ!", "error");
           }
         } finally {
           setConfirmModal((prev) => ({ ...prev, isOpen: false }));
@@ -478,11 +540,18 @@ export default function StaffCounterPage() {
             flex: 0.6,
             overflowY: "auto",
             minWidth: 0,
-            height: "75vh",        // 🔥 fix chiều cao
-            maxHeight: "75vh"
+            height: "75vh",
+            maxHeight: "75vh",
           }}
         >
-          <div style={{ display: "flex", gap: "16px", marginBottom: "clamp(12px, 1.6vh, 18px)", borderBottom: "2px solid #eee" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "16px",
+              marginBottom: "clamp(12px, 1.6vh, 18px)",
+              borderBottom: "2px solid #eee",
+            }}
+          >
             <h3
               onClick={() => setActiveTab("waiting")}
               style={{
@@ -492,8 +561,11 @@ export default function StaffCounterPage() {
                 fontSize: "clamp(20px, 2vw, 28px)",
                 fontWeight: 700,
                 cursor: "pointer",
-                borderBottom: activeTab === "waiting" ? "3px solid #003366" : "3px solid transparent",
-                transition: "all 0.2s"
+                borderBottom:
+                  activeTab === "waiting"
+                    ? "3px solid #003366"
+                    : "3px solid transparent",
+                transition: "all 0.2s",
               }}
             >
               Đang chờ ({totalWaiting})
@@ -507,13 +579,17 @@ export default function StaffCounterPage() {
                 fontSize: "clamp(20px, 2vw, 28px)",
                 fontWeight: 700,
                 cursor: "pointer",
-                borderBottom: activeTab === "recall" ? "3px solid #003366" : "3px solid transparent",
-                transition: "all 0.2s"
+                borderBottom:
+                  activeTab === "recall"
+                    ? "3px solid #003366"
+                    : "3px solid transparent",
+                transition: "all 0.2s",
               }}
             >
               Bỏ qua ({recallTickets.length})
             </h3>
           </div>
+
           <table
             className="staff-page__table"
             style={{
@@ -528,13 +604,55 @@ export default function StaffCounterPage() {
           >
             <thead>
               <tr style={{ background: "#003366", color: "white" }}>
-                <th style={{ width: "10%", padding: "clamp(8px, 1vh, 12px) 10px", borderRight: "1px solid #ddd", fontSize: "clamp(12px, 0.9vw, 16px)" }}>STT</th>
-                <th style={{ width: "20%", padding: "clamp(8px, 1vh, 12px) 10px", borderRight: "1px solid #ddd", fontSize: "clamp(12px, 0.9vw, 16px)" }}>SỐ PHIẾU</th>
-                <th style={{ width: activeTab === "recall" ? "30%" : "42%", padding: "clamp(8px, 1vh, 12px) 10px", borderRight: "1px solid #ddd", fontSize: "clamp(12px, 0.9vw, 16px)" }}>HỌ VÀ TÊN</th>
-                <th style={{ width: activeTab === "recall" ? "20%" : "28%", padding: "clamp(8px, 1vh, 12px) 10px", borderRight: activeTab === "recall" ? "1px solid #ddd" : "none", fontSize: "clamp(12px, 0.9vw, 16px)" }}>QUẦY</th>
-                {activeTab === "recall" && (
-                  <th style={{ width: "20%", padding: "clamp(8px, 1vh, 12px) 10px", fontSize: "clamp(12px, 0.9vw, 16px)" }}>HÀNH ĐỘNG</th>
-                )}
+                <th
+                  style={{
+                    width: "10%",
+                    padding: "clamp(8px, 1vh, 12px) 10px",
+                    borderRight: "1px solid #ddd",
+                    fontSize: "clamp(12px, 0.9vw, 16px)",
+                  }}
+                >
+                  STT
+                </th>
+                <th
+                  style={{
+                    width: "20%",
+                    padding: "clamp(8px, 1vh, 12px) 10px",
+                    borderRight: "1px solid #ddd",
+                    fontSize: "clamp(12px, 0.9vw, 16px)",
+                  }}
+                >
+                  SỐ PHIẾU
+                </th>
+                <th
+                  style={{
+                    width: activeTab === "recall" ? "30%" : "28%",
+                    padding: "clamp(8px, 1vh, 12px) 10px",
+                    borderRight: "1px solid #ddd",
+                    fontSize: "clamp(12px, 0.9vw, 16px)",
+                  }}
+                >
+                  HỌ VÀ TÊN
+                </th>
+                <th
+                  style={{
+                    width: activeTab === "recall" ? "20%" : "22%",
+                    padding: "clamp(8px, 1vh, 12px) 10px",
+                    borderRight: "1px solid #ddd",
+                    fontSize: "clamp(12px, 0.9vw, 16px)",
+                  }}
+                >
+                  QUẦY
+                </th>
+                <th
+                  style={{
+                    width: "20%",
+                    padding: "clamp(8px, 1vh, 12px) 10px",
+                    fontSize: "clamp(12px, 0.9vw, 16px)",
+                  }}
+                >
+                  HÀNH ĐỘNG
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -542,10 +660,24 @@ export default function StaffCounterPage() {
                 waitingTickets.length > 0 ? (
                   waitingTickets.slice(0, 10).map((ticket, index) => (
                     <tr key={ticket.id} style={{ borderBottom: "1px solid #e0e0e0" }}>
-                      <td style={{ padding: "clamp(8px, 0.95vh, 12px) 10px", borderRight: "1px solid #ddd", fontSize: "clamp(14px, 1vw, 18px)" }}>
+                      <td
+                        style={{
+                          padding: "clamp(8px, 0.95vh, 12px) 10px",
+                          borderRight: "1px solid #ddd",
+                          fontSize: "clamp(14px, 1vw, 18px)",
+                        }}
+                      >
                         {index + 1}
                       </td>
-                      <td style={{ padding: "clamp(8px, 0.95vh, 12px) 10px", color: "#003366", fontWeight: 700, fontSize: "clamp(16px, 1.25vw, 20px)", borderRight: "1px solid #ddd" }}>
+                      <td
+                        style={{
+                          padding: "clamp(8px, 0.95vh, 12px) 10px",
+                          color: "#003366",
+                          fontWeight: 700,
+                          fontSize: "clamp(16px, 1.25vw, 20px)",
+                          borderRight: "1px solid #ddd",
+                        }}
+                      >
                         {getTicketDisplayNumber(ticket)}
                       </td>
                       <td
@@ -562,6 +694,7 @@ export default function StaffCounterPage() {
                       <td
                         style={{
                           padding: "clamp(8px, 0.95vh, 12px) 10px",
+                          borderRight: "1px solid #ddd",
                           fontSize: "clamp(14px, 1vw, 17px)",
                           fontWeight: 600,
                           lineHeight: 1.2,
@@ -570,12 +703,29 @@ export default function StaffCounterPage() {
                       >
                         {ticket.serviceName}
                       </td>
+                      <td style={{ padding: "clamp(8px, 0.95vh, 12px) 10px" }}>
+                        <button
+                          onClick={() => handleCallWaitingTicket(ticket.id)}
+                          style={{
+                            padding: "6px 12px",
+                            background: "#003366",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            fontSize: "clamp(13px, 0.9vw, 15px)",
+                            fontWeight: 600,
+                          }}
+                        >
+                          Gọi
+                        </button>
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={5}
                       style={{
                         padding: "24px 16px",
                         color: "#6b7280",
@@ -587,48 +737,92 @@ export default function StaffCounterPage() {
                     </td>
                   </tr>
                 )
-              ) : (
-                recallTickets.length > 0 ? (
-                  recallTickets.map((ticket, index) => (
-                    <tr key={ticket.id || (ticket as any)._id} style={{ borderBottom: "1px solid #e0e0e0" }}>
-                      <td style={{ padding: "clamp(8px, 0.95vh, 12px) 10px", borderRight: "1px solid #ddd", fontSize: "clamp(14px, 1vw, 18px)" }}>
-                        {index + 1}
-                      </td>
-                      <td style={{ padding: "clamp(8px, 0.95vh, 12px) 10px", color: "#003366", fontWeight: 700, fontSize: "clamp(16px, 1.25vw, 20px)", borderRight: "1px solid #ddd" }}>
-                        {getTicketDisplayNumber(ticket)}
-                      </td>
-                      <td style={{ padding: "clamp(8px, 0.95vh, 12px) 10px", borderRight: "1px solid #ddd", fontSize: "clamp(14px, 1vw, 17px)", lineHeight: 1.2, wordBreak: "break-word" }}>
-                        {ticket.customerName}
-                      </td>
-                      <td style={{ padding: "clamp(8px, 0.95vh, 12px) 10px", borderRight: "1px solid #ddd", fontSize: "clamp(14px, 1vw, 17px)", fontWeight: 600, lineHeight: 1.2, wordBreak: "break-word" }}>
-                        {ticket.serviceName}
-                      </td>
-                      <td style={{ padding: "clamp(8px, 0.95vh, 12px) 10px" }}>
-                        <button
-                          onClick={() => handleRecallTicketAction(ticket.id || (ticket as any)._id)}
-                          style={{
-                            padding: "6px 12px",
-                            background: "#003366",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "6px",
-                            cursor: "pointer",
-                            fontSize: "clamp(13px, 0.9vw, 15px)",
-                            fontWeight: 600
-                          }}
-                        >
-                          Gọi lại
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={5} style={{ padding: "24px 16px", color: "#6b7280", fontStyle: "italic", fontSize: 22 }}>
-                      Không có vé bỏ qua
+              ) : recallTickets.length > 0 ? (
+                recallTickets.map((ticket, index) => (
+                  <tr
+                    key={ticket.id || (ticket as Ticket & { _id?: string })._id}
+                    style={{ borderBottom: "1px solid #e0e0e0" }}
+                  >
+                    <td
+                      style={{
+                        padding: "clamp(8px, 0.95vh, 12px) 10px",
+                        borderRight: "1px solid #ddd",
+                        fontSize: "clamp(14px, 1vw, 18px)",
+                      }}
+                    >
+                      {index + 1}
+                    </td>
+                    <td
+                      style={{
+                        padding: "clamp(8px, 0.95vh, 12px) 10px",
+                        color: "#003366",
+                        fontWeight: 700,
+                        fontSize: "clamp(16px, 1.25vw, 20px)",
+                        borderRight: "1px solid #ddd",
+                      }}
+                    >
+                      {getTicketDisplayNumber(ticket)}
+                    </td>
+                    <td
+                      style={{
+                        padding: "clamp(8px, 0.95vh, 12px) 10px",
+                        borderRight: "1px solid #ddd",
+                        fontSize: "clamp(14px, 1vw, 17px)",
+                        lineHeight: 1.2,
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {ticket.customerName}
+                    </td>
+                    <td
+                      style={{
+                        padding: "clamp(8px, 0.95vh, 12px) 10px",
+                        borderRight: "1px solid #ddd",
+                        fontSize: "clamp(14px, 1vw, 17px)",
+                        fontWeight: 600,
+                        lineHeight: 1.2,
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {ticket.serviceName}
+                    </td>
+                    <td style={{ padding: "clamp(8px, 0.95vh, 12px) 10px" }}>
+                      <button
+                        onClick={() =>
+                          handleRecallTicketAction(
+                            ticket.id || (ticket as Ticket & { _id?: string })._id || "",
+                          )
+                        }
+                        style={{
+                          padding: "6px 12px",
+                          background: "#003366",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          fontSize: "clamp(13px, 0.9vw, 15px)",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Gọi lại
+                      </button>
                     </td>
                   </tr>
-                )
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={5}
+                    style={{
+                      padding: "24px 16px",
+                      color: "#6b7280",
+                      fontStyle: "italic",
+                      fontSize: 22,
+                    }}
+                  >
+                    Không có vé bỏ qua
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
@@ -636,7 +830,13 @@ export default function StaffCounterPage() {
 
         <div
           className="staff-page__actions"
-          style={{ flex: 0.4, display: "flex", flexDirection: "column", gap: "clamp(16px, 1.8vh, 24px)", minWidth: 0 }}
+          style={{
+            flex: 0.4,
+            display: "flex",
+            flexDirection: "column",
+            gap: "clamp(16px, 1.8vh, 24px)",
+            minWidth: 0,
+          }}
         >
           <div
             className="staff-page__current-ticket"
@@ -645,12 +845,11 @@ export default function StaffCounterPage() {
               border: "2px solid #003366",
               borderRadius: 12,
               padding: "clamp(16px, 1.8vw, 24px)",
-              flex: "0 0 auto",              // 🔥 không cho giãn
+              flex: "0 0 auto",
               marginTop: "clamp(24px, 4vh, 52px)",
               boxShadow: "0 10px 24px rgba(0, 61, 130, 0.08)",
-
-              minHeight: "35vh",             // 🔥 giới hạn chiều cao
-              overflowY: "auto"              // 🔥 có scroll nếu dài
+              minHeight: "35vh",
+              overflowY: "auto",
             }}
           >
             <h2
@@ -665,10 +864,22 @@ export default function StaffCounterPage() {
               Vé đang xử lý
             </h2>
             {currentTicket ? (
-              <div style={{ fontSize: "clamp(18px, 1.8vw, 30px)", marginLeft: 16, lineHeight: 1.45 }}>
+              <div
+                style={{
+                  fontSize: "clamp(18px, 1.8vw, 30px)",
+                  marginLeft: 16,
+                  lineHeight: 1.45,
+                }}
+              >
                 <div style={{ marginBottom: 12 }}>
                   <span style={{ fontWeight: 700, color: "#333" }}>Số phiếu: </span>
-                  <span style={{ color: "#003366", fontWeight: 700, fontSize: "clamp(22px, 2vw, 34px)" }}>
+                  <span
+                    style={{
+                      color: "#003366",
+                      fontWeight: 700,
+                      fontSize: "clamp(22px, 2vw, 34px)",
+                    }}
+                  >
                     {getTicketDisplayNumber(currentTicket)}
                   </span>
                 </div>
@@ -682,7 +893,14 @@ export default function StaffCounterPage() {
                 </div>
               </div>
             ) : (
-              <div style={{ color: "#999", fontSize: "clamp(15px, 1.2vw, 22px)", fontStyle: "italic", textAlign: "center" }}>
+              <div
+                style={{
+                  color: "#999",
+                  fontSize: "clamp(15px, 1.2vw, 22px)",
+                  fontStyle: "italic",
+                  textAlign: "center",
+                }}
+              >
                 Chờ gọi người tiếp theo
               </div>
             )}
@@ -694,36 +912,66 @@ export default function StaffCounterPage() {
               display: "flex",
               flexDirection: "column",
               gap: "clamp(10px, 1.2vh, 14px)",
-              flex: 0.5
+              flex: 0.5,
             }}
           >
-            {/* CALL */}
-            <button
-              onClick={handleCallNext}
-              disabled={!!currentTicket}
-              onMouseEnter={() => setHovered("call")}
-              onMouseLeave={() => setHovered(null)}
-              style={{
-                padding: "clamp(12px, 1.5vh, 18px) 20px",
-                fontSize: "clamp(18px, 1.8vw, 28px)",
-                fontWeight: 700,
-                background:
-                  hovered === "call" && !currentTicket
-                    ? "#003366"
-                    : !currentTicket
-                      ? "green"
-                      : "#f0f0f0",
-                color: !currentTicket ? "white" : "black",
-                border: `2px solid ${!currentTicket ? "#003366" : "#ccc"}`,
-                borderRadius: 10,
-                cursor: !currentTicket ? "pointer" : "not-allowed",
-                transition: "all 0.2s ease"
-              }}
+            <div
+              className="staff-page__call-row"
+              style={{ display: "flex", gap: "clamp(10px, 1vw, 14px)" }}
             >
-              Gọi
-            </button>
+              <button
+                type="button"
+                onClick={handleBackToWaiting}
+                disabled={!currentTicket}
+                onMouseEnter={() => setHovered("back")}
+                onMouseLeave={() => setHovered(null)}
+                style={{
+                  flex: 1,
+                  padding: "clamp(12px, 1.5vh, 18px) 20px",
+                  fontSize: "clamp(18px, 1.8vw, 28px)",
+                  fontWeight: 700,
+                  background:
+                    hovered === "back" && currentTicket
+                      ? "#003366"
+                      : currentTicket
+                        ? "#f3f4f6"
+                        : "#f0f0f0",
+                  color:
+                    hovered === "back" && currentTicket
+                      ? "white"
+                      : currentTicket
+                        ? "#111827"
+                        : "#6b7280",
+                  border: `2px solid ${currentTicket ? "#003366" : "#ccc"}`,
+                  borderRadius: 10,
+                  cursor: currentTicket ? "pointer" : "not-allowed",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                Trả lại
+              </button>
 
-            {/* COMPLETE */}
+              <button
+                onClick={handleCallNext}
+                onMouseEnter={() => setHovered("call")}
+                onMouseLeave={() => setHovered(null)}
+                style={{
+                  flex: 1,
+                  padding: "clamp(12px, 1.5vh, 18px) 20px",
+                  fontSize: "clamp(18px, 1.8vw, 28px)",
+                  fontWeight: 700,
+                  background: hovered === "call" ? "#003366" : "green",
+                  color: "white",
+                  border: "2px solid #003366",
+                  borderRadius: 10,
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                {currentTicket ? "Gọi lại" : "Người tiếp theo"}
+              </button>
+            </div>
+
             <button
               onClick={handleComplete}
               disabled={!currentTicket}
@@ -743,13 +991,12 @@ export default function StaffCounterPage() {
                 border: `2px solid ${currentTicket ? "#003366" : "#ccc"}`,
                 borderRadius: 10,
                 cursor: currentTicket ? "pointer" : "not-allowed",
-                transition: "all 0.2s ease"
+                transition: "all 0.2s ease",
               }}
             >
               Hoàn thành
             </button>
 
-            {/* SKIP */}
             <button
               onClick={handleSkip}
               disabled={!currentTicket}
@@ -769,7 +1016,7 @@ export default function StaffCounterPage() {
                 border: `2px solid ${currentTicket ? "#003366" : "#ccc"}`,
                 borderRadius: 10,
                 cursor: currentTicket ? "pointer" : "not-allowed",
-                transition: "all 0.2s ease"
+                transition: "all 0.2s ease",
               }}
             >
               Bỏ qua
@@ -936,6 +1183,10 @@ export default function StaffCounterPage() {
           .staff-page__button-group button {
             width: 100%;
           }
+
+          .staff-page__call-row {
+            flex-direction: column;
+          }
         }
       `}</style>
 
@@ -957,4 +1208,3 @@ export default function StaffCounterPage() {
     </div>
   );
 }
-

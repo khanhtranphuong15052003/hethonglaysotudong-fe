@@ -3,6 +3,32 @@ import { getPublicApiBase } from "@/lib/runtime-config";
 const API_URL = getPublicApiBase();
 const AUTH_EXPIRED_ERROR = "AUTH_EXPIRED";
 
+const parseApiJsonSafely = async (response: Response) => {
+  const contentType = response.headers.get("content-type") || "";
+  const raw = await response.text();
+
+  if (!contentType.includes("application/json")) {
+    return {
+      success: false,
+      message:
+        response.status === 404
+          ? "Backend chưa có API trả vé về hàng chờ hoặc route /tickets/:id/back chưa được deploy"
+          : `API trả về dữ liệu không hợp lệ (${response.status})`,
+      raw,
+    };
+  }
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {
+      success: false,
+      message: `Không đọc được JSON từ API (${response.status})`,
+      raw,
+    };
+  }
+};
+
 const normalizeApiErrorMessage = (message?: string) => {
   if (!message) return "";
   return message.toLowerCase();
@@ -103,6 +129,29 @@ export const skipTicketApi = async (ticketId: string) => {
       throw new Error(AUTH_EXPIRED_ERROR);
     }
     throw new Error(data?.message || "Không thể bỏ qua vé");
+  }
+  return data;
+};
+
+export const backTicketToWaitingApi = async (
+  ticketId: string,
+  position: "front" | "back" = "front",
+) => {
+  const token = getToken();
+  const response = await fetch(`${API_URL}/tickets/${ticketId}/back`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ position }),
+  });
+  const data = await parseApiJsonSafely(response);
+  if (!response.ok || (data && data.success === false)) {
+    if (response.status === 401 || isAuthExpiredMessage(data?.message)) {
+      throw new Error(AUTH_EXPIRED_ERROR);
+    }
+    throw new Error(data?.message || "Không thể trả vé về hàng chờ");
   }
   return data;
 };

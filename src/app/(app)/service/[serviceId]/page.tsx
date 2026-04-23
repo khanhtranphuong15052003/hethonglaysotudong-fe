@@ -1,13 +1,15 @@
 "use client";
 
-import { Suspense, useState, useEffect, useRef } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
+import { RiArrowLeftLine } from "react-icons/ri";
 import { Service, getServices } from "@/mock/services";
 import { createTicket } from "@/services/ticket.service";
 import { Ticket } from "@/mock/data";
-import Link from "next/link";
-import Image from "next/image";
 import Toast from "@/components/Toast";
+import ConfirmModal from "@/components/ConfirmModal";
 
 interface DisplayTicket extends Ticket {
   qrCode?: string;
@@ -42,29 +44,13 @@ function ServiceTicketContent() {
   const [ticket, setTicket] = useState<DisplayTicket | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Form state
+  const [confirmSubmitOpen, setConfirmSubmitOpen] = useState(false);
+  const [countdown, setCountdown] = useState(60);
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
-
   const [displayedName, setDisplayedName] = useState(fullName);
   const nameContainerRef = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLParagraphElement>(null);
-
-  useEffect(() => {
-    if (step === "done" && nameContainerRef.current && nameRef.current) {
-      const containerWidth = nameContainerRef.current.offsetWidth;
-      const nameWidth = nameRef.current.scrollWidth;
-
-      if (nameWidth > containerWidth) {
-        setDisplayedName(formatName(fullName));
-      } else {
-        setDisplayedName(fullName);
-      }
-    }
-  }, [step, fullName, displayedName]);
-
-  // Toast state
   const [toast, setToast] = useState<{
     isOpen: boolean;
     message: string;
@@ -75,12 +61,18 @@ function ServiceTicketContent() {
     type: "info",
   });
 
+  const name = fullName.trim().slice(0, MAX_FULL_NAME_LENGTH);
+
   const showToast = (
     message: string,
     type: "success" | "error" | "warning" | "info",
   ) => {
     setToast({ isOpen: true, message, type });
   };
+
+  const handleCloseToast = useCallback(() => {
+    setToast((prev) => ({ ...prev, isOpen: false }));
+  }, []);
 
   useEffect(() => {
     const loadService = async () => {
@@ -91,40 +83,79 @@ function ServiceTicketContent() {
       }
       setLoading(false);
     };
-    loadService();
+
+    void loadService();
   }, [serviceId]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    if (step === "done" && nameContainerRef.current && nameRef.current) {
+      const containerWidth = nameContainerRef.current.offsetWidth;
+      const nameWidth = nameRef.current.scrollWidth;
+      setDisplayedName(nameWidth > containerWidth ? formatName(fullName) : fullName);
+    }
+  }, [fullName, step]);
 
-    if (isSubmitting) {
+  useEffect(() => {
+    if (step !== "done") {
+      setCountdown(60);
       return;
     }
 
+    const interval = window.setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, [step]);
+
+  useEffect(() => {
+    if (step === "done" && countdown === 0) {
+      router.push("/");
+    }
+  }, [countdown, router, step]);
+
+  const validateForm = () => {
     if (fullName !== sanitizeFullName(fullName)) {
-      showToast("Họ và tên chỉ được nhập chữ cái, không dùng ký tự đặc biệt", "error");
-      return;
+      showToast(
+        "Họ và tên chỉ được nhập chữ cái, không dùng ký tự đặc biệt",
+        "error",
+      );
+      return false;
     }
 
-   if (!name) {
-  showToast("Vui lòng nhập họ tên", "error");
-  return;
-}
-if (fullName.trim().length > 25) {
-  showToast("Họ và tên không được vượt quá 25 ký tự", "error");
-  return;
-}
+    if (!name) {
+      showToast("Vui lòng nhập họ tên", "error");
+      return false;
+    }
+
+    if (fullName.trim().length > 25) {
+      showToast("Họ và tên không được vượt quá 25 ký tự", "error");
+      return false;
+    }
+
     if (!phoneNumber.trim()) {
       showToast("Vui lòng nhập số điện thoại", "error");
-      return;
+      return false;
     }
 
     if (!/^[0-9]{8,12}$/.test(phoneNumber.replace(/\D/g, ""))) {
-      showToast("Vui lòng nhập đúng số điện thoại (tối thiểu 8 số đến 12 số)", "error");
-      return;
+      showToast(
+        "Vui lòng nhập đúng số điện thoại (tối thiểu 8 số đến 12 số)",
+        "error",
+      );
+      return false;
     }
 
-    if (!service) {
+    return true;
+  };
+
+  const submitTicket = async () => {
+    if (isSubmitting || !service) {
       return;
     }
 
@@ -136,6 +167,7 @@ if (fullName.trim().length > 25) {
         phone: phoneNumber,
         counterId: selectedCounterId || undefined,
       });
+
       if (result.success && result.data) {
         const ticketData = {
           ...result.data,
@@ -143,11 +175,13 @@ if (fullName.trim().length > 25) {
           serviceCode: result.service?.code || result.data.serviceId?.code,
           number: result.data.number,
           displayNumber: result.data.displayNumber || result.data.formattedNumber,
-          formattedNumber: result.data.formattedNumber || result.data.displayNumber,
+          formattedNumber:
+            result.data.formattedNumber || result.data.displayNumber,
           qrCode: result.data.qrCode,
         };
         setTicket(ticketData as DisplayTicket);
         setStep("done");
+        setIsSubmitting(false);
         showToast(result.message || "Lấy số thành công!", "success");
       } else {
         throw new Error(result.message || "Lỗi khi tạo vé");
@@ -162,11 +196,22 @@ if (fullName.trim().length > 25) {
     }
   };
 
-  const formatName = (name: string) => {
-    if (!name) return "";
-    const words = name.trim().split(/\s+/);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubmitting) {
+      return;
+    }
+    if (!validateForm()) {
+      return;
+    }
+    setConfirmSubmitOpen(true);
+  };
+
+  const formatName = (inputName: string) => {
+    if (!inputName) return "";
+    const words = inputName.trim().split(/\s+/);
     if (words.length <= 2) {
-      return name;
+      return inputName;
     }
     const firstName = words[0];
     const lastName = words[words.length - 1];
@@ -180,15 +225,13 @@ if (fullName.trim().length > 25) {
   const handleReset = () => {
     router.push("/");
   };
-  const name = fullName.trim().slice(0, MAX_FULL_NAME_LENGTH);
-
 
   const qrData = ticket
     ? `${service?.code ?? ""}-${getTicketDisplayNumber(ticket)}|${fullName}|${service?.name ?? ""}`
     : "";
 
   if (loading) {
-    return <div style={{ padding: 20 }}></div>;
+    return <div style={{ padding: 20 }} />;
   }
 
   if (!service) {
@@ -209,7 +252,7 @@ if (fullName.trim().length > 25) {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        minHeight: "calc(100vh - 120px)", // Adjust based on header height
+        minHeight: "calc(100vh - 120px)",
         paddingTop: 0,
         paddingBottom: 20,
       }}
@@ -228,7 +271,6 @@ if (fullName.trim().length > 25) {
           <h2
             style={{
               textAlign: "center",
-             
               color: "#003366",
               textTransform: "uppercase",
               fontSize: "40px",
@@ -237,12 +279,18 @@ if (fullName.trim().length > 25) {
           >
             {service.name}
           </h2>
-          <p style={{ textAlign: "center", color: "#666", marginBottom: 18, fontSize:30 }}>
+          <p
+            style={{
+              textAlign: "center",
+              color: "#666",
+              marginBottom: 18,
+              fontSize: 30,
+            }}
+          >
             {service.description}
           </p>
 
           <form onSubmit={handleSubmit}>
-            {/* Họ và tên */}
             <div style={{ marginBottom: 20 }}>
               <label
                 style={{
@@ -254,36 +302,35 @@ if (fullName.trim().length > 25) {
               >
                 Họ và tên <span style={{ color: "red" }}>*</span>
               </label>
- <input
-  type="text"
-  value={fullName}
-  onChange={(e) => {
-    setFullName(sanitizeFullName(e.target.value));
-  }}
-  onPaste={(e) => {
-    e.preventDefault();
-    const pastedText = e.clipboardData.getData("text");
-    setFullName((prev) => sanitizeFullName(`${prev} ${pastedText}`.trim()));
-  }}
-  placeholder="Nhập họ và tên"
-  maxLength={MAX_FULL_NAME_LENGTH}
-  inputMode="text"
-  autoComplete="name"
-  style={{
-    width: "100%",
-    padding: 12,
-    fontSize: 24,
-    border: "1px solid #ccc",
-    borderRadius: 4,
-    boxSizing: "border-box",
-    fontFamily: "inherit",
-  }}
-/>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => {
+                  setFullName(sanitizeFullName(e.target.value));
+                }}
+                onPaste={(e) => {
+                  e.preventDefault();
+                  const pastedText = e.clipboardData.getData("text");
+                  setFullName((prev) =>
+                    sanitizeFullName(`${prev} ${pastedText}`.trim()),
+                  );
+                }}
+                placeholder="Nhập họ và tên"
+                maxLength={MAX_FULL_NAME_LENGTH}
+                inputMode="text"
+                autoComplete="name"
+                style={{
+                  width: "100%",
+                  padding: 12,
+                  fontSize: 24,
+                  border: "1px solid #ccc",
+                  borderRadius: 4,
+                  boxSizing: "border-box",
+                  fontFamily: "inherit",
+                }}
+              />
             </div>
 
-           
-
-            {/* Số điện thoại */}
             <div style={{ marginBottom: 20 }}>
               <label
                 style={{
@@ -313,7 +360,6 @@ if (fullName.trim().length > 25) {
             </div>
 
             <div style={{ display: "flex", gap: 10 }}>
-              {/* Quay lại */}
               <Link href="/" style={{ flex: 1, textDecoration: "none" }}>
                 <button
                   type="button"
@@ -329,7 +375,10 @@ if (fullName.trim().length > 25) {
                     borderRadius: 4,
                     cursor: isSubmitting ? "not-allowed" : "pointer",
                     transition: "background 0.3s ease",
-                    
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 10,
                   }}
                   onMouseOver={(e) => {
                     if (!isSubmitting) {
@@ -342,11 +391,11 @@ if (fullName.trim().length > 25) {
                       : "#f0f0f0";
                   }}
                 >
-                 Quay lại
+                  <RiArrowLeftLine size={28} />
+                  <span>Quay lại</span>
                 </button>
               </Link>
 
-              {/* Submit button */}
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -383,33 +432,49 @@ if (fullName.trim().length > 25) {
       )}
 
       {step === "done" && (
-        <div style={{ display: 'flex', width: '100%', maxWidth: 1200, gap: 20 }}>
-          {/* Left Card - Ticket Info */}
+        <div
+          style={{
+            display: "flex",
+            width: "100%",
+            maxWidth: 1380,
+            gap: 26,
+            alignItems: "stretch",
+          }}
+        >
           <div
             style={{
-              width: "75%",
+              width: "78%",
               background: "white",
-              padding: 5,
-              borderRadius: 14,
+              padding: 10,
+              borderRadius: 18,
               border: "1px solid #dbe6f2",
-              boxShadow: "0 10px 24px rgba(0, 39, 91, 0.1)",
+              boxShadow: "0 14px 36px rgba(0, 39, 91, 0.12)",
               textAlign: "center",
             }}
           >
-            <h1 style={{ color: "#003366",  fontSize: 28,  textTransform: "uppercase", paddingTop: 10 }}>
-               YÊU CẦU CỦA QUÝ ÔNG BÀ ĐÃ ĐƯỢC TIẾP NHẬN
+            <h1
+              style={{
+                color: "#003366",
+                fontSize: 36,
+                textTransform: "uppercase",
+                paddingTop: 14,
+                marginBottom: 8,
+              }}
+            >
+              YÊU CẦU CỦA QUÝ ÔNG BÀ ĐÃ ĐƯỢC TIẾP NHẬN
             </h1>
-            <p style={{ fontSize: 16, color: "#333", marginBottom: 4 }}>
-             Xin vui lòng chờ đến thứ tự
+            <p style={{ fontSize: 24, color: "#333", marginBottom: 10, marginTop: 0 }}>
+              Xin vui lòng chờ đến thứ tự
             </p>
+
             <div
               style={{
                 background: "white",
                 border: "2px solid #0b4a8a",
-                borderRadius: 12,
-                margin: '0 20px 10px',
-                padding: '20px 20px',
-                minHeight: "280px",
+                borderRadius: 16,
+                margin: "0 24px 16px",
+                padding: "28px 26px",
+                minHeight: "360px",
                 display: "flex",
                 alignItems: "stretch",
               }}
@@ -420,13 +485,12 @@ if (fullName.trim().length > 25) {
                   justifyContent: "space-around",
                   alignItems: "center",
                   width: "100%",
-                  gap: 10,
+                  gap: 18,
                 }}
               >
-                {/* Cột 1: Thông tin yêu cầu */}
                 <div
                   style={{
-                    paddingLeft: 15,
+                    paddingLeft: 10,
                     textAlign: "left",
                     flex: 1,
                     display: "flex",
@@ -437,22 +501,26 @@ if (fullName.trim().length > 25) {
                 >
                   <p
                     style={{
-                      fontSize: 20,
+                      fontSize: 28,
                       color: "#5c6773",
-                    
                       textTransform: "uppercase",
                       fontStyle: "italic",
+                      margin: "0 0 8px 0",
                     }}
                   >
-                   Đương sự:
+                    Đương sự:
                   </p>
                   <p
                     style={{
-                      fontSize: 20,
+                      fontSize: 24,
                       color: "#5c6773",
-                      margin: 0,
+                      margin: "0 0 12px 0",
                       textTransform: "uppercase",
-                      whiteSpace: "nowrap",
+                      whiteSpace: "normal",
+                      wordBreak: "break-word",
+                      overflowWrap: "anywhere",
+                      maxWidth: "100%",
+                      lineHeight: 1.35,
                     }}
                     ref={nameRef}
                   >
@@ -460,18 +528,18 @@ if (fullName.trim().length > 25) {
                   </p>
                   <p
                     style={{
-                      fontSize: 20,
+                      fontSize: 28,
                       color: "#5c6773",
-                    
                       textTransform: "uppercase",
                       fontStyle: "italic",
+                      margin: "0 0 8px 0",
                     }}
                   >
-                    YÊU CẦU
+                    YÊU CẦU:
                   </p>
                   <p
                     style={{
-                      fontSize: 20,
+                      fontSize: 24,
                       color: "#5c6773",
                       margin: "0 0 4px 0",
                       textTransform: "uppercase",
@@ -479,10 +547,8 @@ if (fullName.trim().length > 25) {
                   >
                     <strong>{service.name}</strong>
                   </p>
-                  
                 </div>
 
-                {/* Cột 2: Số thứ tự */}
                 <div
                   style={{
                     textAlign: "center",
@@ -493,12 +559,9 @@ if (fullName.trim().length > 25) {
                     alignItems: "center",
                   }}
                 >
-                  {/* <p style={{ fontSize: 14, color: "#5c6773", marginBottom:"4px" , textTransform: "uppercase"}}>
-                     SỐ THỨ TỰ CỦA QUÝ ÔNG BÀ :
-                  </p> */}
                   <h2
                     style={{
-                      fontSize: 150,
+                      fontSize: 190,
                       fontWeight: "bold",
                       color: "#003366",
                       margin: "0",
@@ -510,59 +573,130 @@ if (fullName.trim().length > 25) {
                   </h2>
                 </div>
 
-                {/* Cột 3: Mã QR */}
                 <div
                   style={{
                     flex: 1,
-                    
                     background: "white",
                     borderRadius: 10,
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
-                    minHeight: "220px",
-                    gap: 14,
+                    minHeight: "260px",
+                    gap: 18,
                   }}
                 >
                   <Image
-                    src={ticket?.qrCode || `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`}
+                    src={
+                      ticket?.qrCode ||
+                      `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`
+                    }
                     alt="QR mã số thứ tự"
-                    width={200}
-                    height={200}
+                    width={240}
+                    height={240}
                     style={{ display: "block" }}
                     unoptimized
                   />
                   <p
                     style={{
                       margin: 0,
-                      fontSize: 12,
+                      fontSize: 18,
                       color: "#44515f",
                       lineHeight: 1.4,
                       textAlign: "center",
                     }}
                   >
-                   Vui lòng chụp lại mã QR
+                    QUý ông bà vui lòng chụp lại mã QR
                   </p>
                 </div>
               </div>
             </div>
 
+          </div>
+
+          <div
+            style={{
+              width: "22%",
+              background: "#ffffff",
+              padding: "30px 24px",
+              borderRadius: 18,
+              border: "1px solid #dbe6f2",
+              boxShadow: "0 14px 36px rgba(0, 39, 91, 0.12)",
+              textAlign: "center",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              gap: 0,
+            }}
+          >
+            <h1
+              style={{
+                color: "#003366",
+                textTransform: "uppercase",
+                fontSize: 24,
+                fontWeight: "bold",
+                margin: "0 0 26px 0",
+                lineHeight: 1.45,
+              }}
+            >
+              QUÝ ÔNG BÀ VUI LÒNG CHỤP LẠI VÉ
+            </h1>
+            <p style={{ fontSize: 20, color: "#64748b", margin: "0 0 22px 0" }}>HOẶC</p>
+            <button
+              type="button"
+              style={{
+                width: "100%",
+                padding: "18px 18px",
+                borderRadius: 12,
+                border: "1px ",
+                background: "green",
+                color: "white",
+                fontSize: 18,
+                fontWeight: 700,
+                cursor: "pointer",
+                marginBottom: 26,
+                // boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.55)",
+              }}
+            >
+              TÔI MUỐN IN VÉ
+            </button>
+            <p style={{ fontSize: 20, color: "#64748b", margin: "0 0 18px 0" }}>HOẶC</p>
+            <button
+              type="button"
+              disabled
+              style={{
+                width: "100%",
+                padding: "18px 18px",
+                borderRadius: 12,
+                border: "none",
+                background: "#94a3b8",
+                color: "#e2e8f0",
+                fontSize: 18,
+                fontWeight: 700,
+                cursor: "not-allowed",
+                marginBottom: 16,
+                boxShadow: "none",
+                opacity: 0.75,
+              }}
+            >
+              GỬI ZALO
+            </button>
             <button
               onClick={handleReset}
               style={{
-                marginTop: 10,
-                marginBottom: 20,
-                padding: "16px 30px",
-                fontSize: 18,
-                fontWeight: 600,
-                background: "#003366",
-                color: "white",
+                width: "100%",
+                padding: "18px 18px",
+               
+                borderRadius: 12,
                 border: "none",
-                borderRadius: 4,
+               background: "#003366",
+                color: "white",
+                fontSize: 18,
+                fontWeight: 700,
                 cursor: "pointer",
                 transition: "background 0.3s ease",
-                width: "calc(100% - 40px)",
+                marginTop: 32,
+                boxShadow: "0 10px 22px rgba(0, 51, 102, 0.18)",
               }}
               onMouseOver={(e) => {
                 e.currentTarget.style.background = "#001f47";
@@ -571,64 +705,31 @@ if (fullName.trim().length > 25) {
                 e.currentTarget.style.background = "#003366";
               }}
             >
-              Hoàn tất
+              Hoàn tất ({countdown}s)
             </button>
-          </div>
-
-          {/* Right Card - Feedback Info */}
-          <div
-            style={{
-              width: "25%",
-              background: "#ffffff", // Light blue background
-              padding: "24px",
-              borderRadius: 12, // Softer corners
-              border: "1px solid #dbe6f2",
-              boxShadow: "0 4px 12px rgba(0, 39, 91, 0.08)",
-              textAlign: "center", // Center align all content
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              gap: 16, // Add gap between elements
-            }}
-          >
-            <h1 style={{ 
-              color: "#003366", 
-              textTransform: "uppercase", 
-              fontSize: 22, 
-              fontWeight: "bold",
-              margin: 0,
-            }}>
-              Yêu cầu - Phản ánh
-            </h1>
-            <p style={{ 
-              fontSize: 16, 
-              color: "#334155", // Softer text color
-              lineHeight: 1.7,
-              margin: 0,
-            }}>
-              Mọi ý kiến đóng góp, độ hài lòng, hoặc phản ánh tiêu cực, vui lòng gửi trực tiếp đến Chánh án TAND Khu vực 1 qua email:
-              <br />
-              <strong style={{ 
-                display: "block", 
-                marginTop: 12,
-                color: "#003366",
-                fontSize: 17,
-                letterSpacing: '0.5px'
-              }} >
-                TAKV1.HCM@TOAAN.GOV.VN
-              </strong>
-            </p>
           </div>
         </div>
       )}
 
-      {/* Toast Component */}
       <Toast
         isOpen={toast.isOpen}
         message={toast.message}
         type={toast.type}
-        onClose={() => setToast({ ...toast, isOpen: false })}
+        onClose={handleCloseToast}
+        duration={5000}
       />
+
+      <ConfirmModal
+        isOpen={confirmSubmitOpen}
+        title="Xác nhận thông tin"
+        message={`Họ và tên: ${name.toLocaleUpperCase("vi-VN")}\nSố điện thoại: ${phoneNumber.trim()}\nBạn có muốn lấy số không?`}
+        onConfirm={() => {
+          setConfirmSubmitOpen(false);
+          void submitTicket();
+        }}
+        onCancel={() => setConfirmSubmitOpen(false)}
+      />
+
       {isSubmitting && step === "form" && (
         <div
           style={{
@@ -698,6 +799,7 @@ if (fullName.trim().length > 25) {
           </div>
         </div>
       )}
+
       <style jsx>{`
         @keyframes serviceTicketSpin {
           from {
@@ -719,5 +821,3 @@ export default function ServiceTicketPage() {
     </Suspense>
   );
 }
-
-

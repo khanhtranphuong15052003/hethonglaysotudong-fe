@@ -28,7 +28,7 @@ export default function ConfirmModal({
           <h2>{title}</h2>
         </div>
         <div className="admin-confirm-body">
-          <p>{message}</p>
+          <p style={{ whiteSpace: "pre-line" }}>{message}</p>
         </div>
         <div className="admin-confirm-actions">
           <button className="cancel" onClick={onCancel}>

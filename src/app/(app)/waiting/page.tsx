@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 
 interface WaitingTicket {
@@ -35,35 +35,46 @@ function getSocketBaseUrl() {
 }
 
 function getDisplayNumber(ticket: WaitingTicket) {
-  return ticket.displayNumber || ticket.formattedNumber || String(ticket.number).padStart(3, "0");
+  return (
+    ticket.displayNumber ||
+    ticket.formattedNumber ||
+    String(ticket.number).padStart(3, "0")
+  );
 }
 
 export default function WaitingPage() {
   const [tickets, setTickets] = useState<WaitingTicket[]>([]);
-  const [lastIssuedByCounter, setLastIssuedByCounter] = useState<LastIssuedCounter[]>([]);
+  const [lastIssuedByCounter, setLastIssuedByCounter] = useState<
+    LastIssuedCounter[]
+  >([]);
   const [totalWaiting, setTotalWaiting] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
 
-  // Initial load via API then connect socket
-  useEffect(() => {
-    const API_BASE = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+  const fetchWaitingTickets = async () => {
+    const apiBase = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+    const res = await fetch(`${apiBase}/tickets/waiting`);
+    if (!res.ok) {
+      throw new Error("Không thể tải dữ liệu phòng chờ");
+    }
+    const json = await res.json();
+    if (json.success) {
+      setTickets(json.data || []);
+      setTotalWaiting(json.count ?? (json.data?.length ?? 0));
+      setLastIssuedByCounter(
+        [...(json.lastIssuedByCounter || [])].sort(
+          (a: LastIssuedCounter, b: LastIssuedCounter) =>
+            a.counterNumber - b.counterNumber,
+        ),
+      );
+    }
+  };
 
+  useEffect(() => {
     const fetchInitial = async () => {
       try {
-        const res = await fetch(`${API_BASE}/tickets/waiting`);
-        if (!res.ok) throw new Error("Không thể tải dữ liệu phòng chờ");
-        const json = await res.json();
-        if (json.success) {
-          setTickets(json.data || []);
-          setTotalWaiting(json.count ?? (json.data?.length ?? 0));
-          setLastIssuedByCounter(
-            [...(json.lastIssuedByCounter || [])].sort(
-              (a: LastIssuedCounter, b: LastIssuedCounter) => a.counterNumber - b.counterNumber
-            )
-          );
-        }
+        await fetchWaitingTickets();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Lỗi không xác định");
       } finally {
@@ -73,7 +84,6 @@ export default function WaitingPage() {
 
     void fetchInitial();
 
-    // Connect socket
     const socket = io(getSocketBaseUrl(), { transports: ["websocket"] });
     socketRef.current = socket;
 
@@ -81,42 +91,56 @@ export default function WaitingPage() {
       socket.emit("join-waiting-room");
     });
 
-    // Backend sends snapshot right after join
-    socket.on("waiting-room-snapshot", (payload: {
-      tickets?: WaitingTicket[];
-      totalWaiting: number;
-      lastIssuedByCounter: LastIssuedCounter[];
-    }) => {
-      setTickets(payload.tickets || []);
-      setTotalWaiting(payload.totalWaiting);
-      setLastIssuedByCounter(
-        [...(payload.lastIssuedByCounter || [])].sort((a, b) => a.counterNumber - b.counterNumber)
-      );
-      setLoading(false);
-    });
+    socket.on(
+      "waiting-room-snapshot",
+      (payload: {
+        tickets?: WaitingTicket[];
+        totalWaiting: number;
+        lastIssuedByCounter: LastIssuedCounter[];
+      }) => {
+        setTickets(payload.tickets || []);
+        setTotalWaiting(payload.totalWaiting);
+        setLastIssuedByCounter(
+          [...(payload.lastIssuedByCounter || [])].sort(
+            (a, b) => a.counterNumber - b.counterNumber,
+          ),
+        );
+        setLoading(false);
+      },
+    );
 
-    socket.on("new-ticket", (payload: {
-      ticket: WaitingTicket;
-      totalWaiting: number;
-      lastIssuedByCounter: LastIssuedCounter[];
-    }) => {
-      setTickets((prev) => [...prev, payload.ticket]);
-      setTotalWaiting(payload.totalWaiting);
-      setLastIssuedByCounter(
-        [...(payload.lastIssuedByCounter || [])].sort((a, b) => a.counterNumber - b.counterNumber)
-      );
-    });
+    socket.on(
+      "new-ticket",
+      (payload: {
+        ticket: WaitingTicket;
+        totalWaiting: number;
+        lastIssuedByCounter: LastIssuedCounter[];
+      }) => {
+        setTickets((prev) => [...prev, payload.ticket]);
+        setTotalWaiting(payload.totalWaiting);
+        setLastIssuedByCounter(
+          [...(payload.lastIssuedByCounter || [])].sort(
+            (a, b) => a.counterNumber - b.counterNumber,
+          ),
+        );
+      },
+    );
 
     const handleReset = (payload: { lastIssuedByCounter: LastIssuedCounter[] }) => {
       setTickets([]);
       setTotalWaiting(0);
       setLastIssuedByCounter(
-        [...(payload.lastIssuedByCounter || [])].sort((a, b) => a.counterNumber - b.counterNumber)
+        [...(payload.lastIssuedByCounter || [])].sort(
+          (a, b) => a.counterNumber - b.counterNumber,
+        ),
       );
     };
 
     socket.on("tickets-reset-day", handleReset);
     socket.on("tickets-reset-all", handleReset);
+    socket.on("ticket-back-to-waiting", () => {
+      void fetchInitial();
+    });
 
     socket.on("socket-error", (payload: { message: string }) => {
       console.error("Waiting room socket error:", payload.message);
@@ -152,7 +176,6 @@ export default function WaitingPage() {
         gap: 20,
       }}
     >
-      {/* Header */}
       <h2
         style={{
           margin: 0,
@@ -166,7 +189,6 @@ export default function WaitingPage() {
         Danh sách chờ ({totalWaiting} người)
       </h2>
 
-      {/* Last issued by counter badges */}
       {lastIssuedByCounter.length > 0 && (
         <div
           style={{
@@ -209,7 +231,6 @@ export default function WaitingPage() {
         </div>
       )}
 
-      {/* Tickets table */}
       {tickets.length === 0 ? (
         <div
           style={{

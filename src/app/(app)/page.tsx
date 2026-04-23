@@ -116,7 +116,7 @@ const getCardBackground = (index: number) => {
           lineHeight: 1.2,
         }}
       >
-      QUÝ ÔNG BÀ VUI LÒNG CHỌN
+      QUÝ ÔNG BÀ VUI LÒNG CHỌN YÊU CẦU
       </h2>
       {loading ? (
         <p style={{ textAlign: "center" }}>Đang tải...</p>
