@@ -26,8 +26,8 @@ export default function CounterDisplayLayout({
   waitingList,
   nowCalling,
 }: CounterDisplayLayoutProps) {
-  // Lấy 8 người đầu tiên từ danh sách chờ
-  const displayList = waitingList.slice(0, 10);
+  // Lấy 5 người đầu tiên từ danh sách chờ
+  const displayList = waitingList.slice(0, 5);
 
   return (
     <div
@@ -128,7 +128,7 @@ export default function CounterDisplayLayout({
                     color: index % 2 === 1 ? "white" : "#003366",
                     fontSize: "50px",
                     fontWeight: "bold",
-                    flex: "0 0 10%",
+                    flex: "0 0 20%",
                     minHeight: "auto",
                     lineHeight: "1",
                   }}

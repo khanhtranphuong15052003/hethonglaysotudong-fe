@@ -47,9 +47,62 @@ const isAuthExpiredMessage = (message?: string) => {
   );
 };
 
+const extractTtsEnabled = (payload: unknown): boolean | null => {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const record = payload as Record<string, unknown>;
+
+  if (typeof record.enabled === "boolean") {
+    return record.enabled;
+  }
+
+  if (typeof record.ttsEnabled === "boolean") {
+    return record.ttsEnabled;
+  }
+
+  if (typeof record.tts_enabled === "boolean") {
+    return record.tts_enabled;
+  }
+
+  if (typeof record.isEnabled === "boolean") {
+    return record.isEnabled;
+  }
+
+  if (typeof record.value === "boolean") {
+    return record.value;
+  }
+
+  if (record.data && typeof record.data === "object") {
+    return extractTtsEnabled(record.data);
+  }
+
+  if (record.setting && typeof record.setting === "object") {
+    return extractTtsEnabled(record.setting);
+  }
+
+  if (record.result && typeof record.result === "object") {
+    return extractTtsEnabled(record.result);
+  }
+
+  return null;
+};
+
 // Helper to get token
 const getToken = () => {
   if (typeof window === "undefined") return null;
+  return sessionStorage.getItem("staffToken");
+};
+
+const getSettingsToken = () => {
+  if (typeof window === "undefined") return null;
+
+  const adminToken = localStorage.getItem("adminToken");
+  if (adminToken) {
+    return adminToken;
+  }
+
   return sessionStorage.getItem("staffToken");
 };
 
@@ -131,6 +184,29 @@ export const skipTicketApi = async (ticketId: string) => {
     throw new Error(data?.message || "Không thể bỏ qua vé");
   }
   return data;
+};
+
+export const getTtsEnabledStatus = async () => {
+  const token = getSettingsToken();
+  const response = await fetch(`${API_URL}/admin/settings/tts`, {
+    headers: token
+      ? {
+          Authorization: `Bearer ${token}`,
+        }
+      : undefined,
+  });
+
+  const data = await parseApiJsonSafely(response);
+  if (!response.ok || data?.success === false) {
+    throw new Error(data?.message || "Khong lay duoc cau hinh voice");
+  }
+  const enabled = extractTtsEnabled(data);
+
+  if (typeof enabled === "boolean") {
+    return enabled;
+  }
+
+  throw new Error(data?.message || "Khong lay duoc cau hinh voice");
 };
 
 export const backTicketToWaitingApi = async (
@@ -240,7 +316,6 @@ export const createTicket = async (data: {
   phone: string;
   serviceId: string;
   counterId?: string;
-  autoPrint?: boolean;
 }) => {
   const response = await fetch(`${API_URL}/tickets`, {
     method: "POST",
@@ -249,5 +324,17 @@ export const createTicket = async (data: {
     },
     body: JSON.stringify(data),
   });
+  return response.json();
+};
+
+export const printTicket = async (ticketId: string) => {
+  const response = await fetch(`${API_URL}/tickets/${ticketId}/print`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({}),
+  });
+
   return response.json();
 };

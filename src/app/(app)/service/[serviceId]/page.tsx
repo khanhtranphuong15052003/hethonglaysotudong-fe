@@ -6,26 +6,29 @@ import Link from "next/link";
 import Image from "next/image";
 import { RiArrowLeftLine } from "react-icons/ri";
 import { Service, getServices } from "@/mock/services";
-import { createTicket } from "@/services/ticket.service";
+import { createTicket, printTicket } from "@/services/ticket.service";
 import { Ticket } from "@/mock/data";
 import Toast from "@/components/Toast";
 import ConfirmModal from "@/components/ConfirmModal";
 
 interface DisplayTicket extends Ticket {
+  _id?: string;
   qrCode?: string;
   serviceCode?: string;
   displayNumber?: string;
   formattedNumber?: string;
 }
 
-const MAX_FULL_NAME_LENGTH = 25;
+const MAX_FULL_NAME_LENGTH = 35;
+const FULL_NAME_ALLOWED_PATTERN = /^[\p{L}\s]+$/u;
+const FULL_NAME_REPEATED_CHAR_PATTERN = /([\p{L}])\1{2,}/u;
 
 const sanitizeFullName = (value: string) =>
   value
-    .replace(/[^\p{L}\s]/gu, "")
     .replace(/\s+/g, " ")
-    .replace(/^\s+/g, "")
-    .slice(0, MAX_FULL_NAME_LENGTH);
+    .replace(/^\s+/g, "");
+
+const normalizeFullName = (value: string) => sanitizeFullName(value).trim();
 
 const getTicketDisplayNumber = (ticket?: Partial<DisplayTicket> | null) =>
   ticket?.displayNumber ||
@@ -44,6 +47,7 @@ function ServiceTicketContent() {
   const [ticket, setTicket] = useState<DisplayTicket | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
   const [confirmSubmitOpen, setConfirmSubmitOpen] = useState(false);
   const [countdown, setCountdown] = useState(60);
   const [fullName, setFullName] = useState("");
@@ -61,7 +65,7 @@ function ServiceTicketContent() {
     type: "info",
   });
 
-  const name = fullName.trim().slice(0, MAX_FULL_NAME_LENGTH);
+  const name = normalizeFullName(fullName);
 
   const showToast = (
     message: string,
@@ -120,7 +124,14 @@ function ServiceTicketContent() {
   }, [countdown, router, step]);
 
   const validateForm = () => {
-    if (fullName !== sanitizeFullName(fullName)) {
+    const normalizedName = normalizeFullName(fullName);
+
+    if (!normalizedName) {
+      showToast("Vui lòng nhập họ tên", "error");
+      return false;
+    }
+
+    if (!FULL_NAME_ALLOWED_PATTERN.test(normalizedName)) {
       showToast(
         "Họ và tên chỉ được nhập chữ cái, không dùng ký tự đặc biệt",
         "error",
@@ -128,13 +139,12 @@ function ServiceTicketContent() {
       return false;
     }
 
-    if (!name) {
-      showToast("Vui lòng nhập họ tên", "error");
+    if (normalizedName.length > MAX_FULL_NAME_LENGTH) {
+      showToast("Họ và tên không được vượt quá 35 ký tự", "error");
       return false;
     }
-
-    if (fullName.trim().length > 25) {
-      showToast("Họ và tên không được vượt quá 25 ký tự", "error");
+    if (FULL_NAME_REPEATED_CHAR_PATTERN.test(normalizedName)) {
+      showToast("Họ và tên không được có ký tự lặp liên tiếp từ 3 lần trở lên", "error");
       return false;
     }
 
@@ -163,7 +173,7 @@ function ServiceTicketContent() {
     try {
       const result = await createTicket({
         serviceId,
-        name: fullName,
+        name,
         phone: phoneNumber,
         counterId: selectedCounterId || undefined,
       });
@@ -171,6 +181,7 @@ function ServiceTicketContent() {
       if (result.success && result.data) {
         const ticketData = {
           ...result.data,
+          id: result.data.id || result.data._id || "",
           serviceName: result.service?.name || result.data.serviceId?.name,
           serviceCode: result.service?.code || result.data.serviceId?.code,
           number: result.data.number,
@@ -193,6 +204,31 @@ function ServiceTicketContent() {
         error instanceof Error ? error.message : "Không thể kết nối với server",
         "error",
       );
+    }
+  };
+
+  const handlePrintTicket = async () => {
+    if (!ticket?._id || isPrinting) {
+      return;
+    }
+
+    setIsPrinting(true);
+    try {
+      const result = await printTicket(ticket._id);
+
+      if (!result?.success) {
+        throw new Error(result?.message || "Loi khi gui lenh in ve");
+      }
+
+      showToast(result.message || "Da gui lenh in ve", "success");
+    } catch (error) {
+      console.error("Error printing ticket:", error);
+      showToast(
+        error instanceof Error ? error.message : "Khong the ket noi voi server",
+        "error",
+      );
+    } finally {
+      setIsPrinting(false);
     }
   };
 
@@ -311,12 +347,9 @@ function ServiceTicketContent() {
                 onPaste={(e) => {
                   e.preventDefault();
                   const pastedText = e.clipboardData.getData("text");
-                  setFullName((prev) =>
-                    sanitizeFullName(`${prev} ${pastedText}`.trim()),
-                  );
+                  setFullName((prev) => sanitizeFullName(`${prev} ${pastedText}`));
                 }}
                 placeholder="Nhập họ và tên"
-                maxLength={MAX_FULL_NAME_LENGTH}
                 inputMode="text"
                 autoComplete="name"
                 style={{
@@ -606,7 +639,7 @@ function ServiceTicketContent() {
                       textAlign: "center",
                     }}
                   >
-                    QUý ông bà vui lòng chụp lại mã QR
+                    Quý ông bà vui lòng chụp lại mã QR
                   </p>
                 </div>
               </div>
@@ -644,21 +677,23 @@ function ServiceTicketContent() {
             <p style={{ fontSize: 20, color: "#64748b", margin: "0 0 22px 0" }}>HOẶC</p>
             <button
               type="button"
+              onClick={() => void handlePrintTicket()}
+              disabled={isPrinting || !ticket?._id}
               style={{
                 width: "100%",
                 padding: "18px 18px",
                 borderRadius: 12,
-                border: "1px ",
-                background: "green",
+                border: "1px solid #0f7a35",
+                background: isPrinting ? "#7bbf8f" : "green",
                 color: "white",
                 fontSize: 18,
                 fontWeight: 700,
-                cursor: "pointer",
+                cursor: isPrinting ? "not-allowed" : "pointer",
                 marginBottom: 26,
-                // boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.55)",
+                opacity: isPrinting ? 0.85 : 1,
               }}
             >
-              TÔI MUỐN IN VÉ
+              {isPrinting ? "DANG GUI LENH IN..." : "TÔI MUỐN IN VÉ"}
             </button>
             <p style={{ fontSize: 20, color: "#64748b", margin: "0 0 18px 0" }}>HOẶC</p>
             <button

@@ -88,8 +88,8 @@ export default function SettingsPage() {
       setAutoResetTime(updated.time);
       success(
         updated.enabled
-          ? "Đã bật tự động reset ticket"
-          : "Đã tắt tự động reset ticket",
+          ? "Đã bật tự động reset vé"
+          : "Đã tắt tự động reset vé",
       );
     } catch (err) {
       const message =
@@ -128,6 +128,7 @@ export default function SettingsPage() {
     border: "1px solid #e5e7eb",
     boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
     padding: "28px",
+    fontFamily: "inherit",
   };
 
   const switchStyle = (disabled: boolean): CSSProperties => ({
@@ -143,6 +144,8 @@ export default function SettingsPage() {
       style={{
         padding: "24px",
         minHeight: "100%",
+        fontFamily: "inherit",
+        color: "#1f2937",
       }}
     >
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
@@ -159,9 +162,9 @@ export default function SettingsPage() {
             <h2
               style={{
                 margin: 0,
-                fontSize: "28px",
-                fontWeight: 800,
-                color: "#003366",
+                fontSize: "20px",
+                fontWeight: 600,
+                color: "#1f2937",
               }}
             >
               Thiết lập chế độ phát
@@ -169,9 +172,9 @@ export default function SettingsPage() {
             <p
               style={{
                 margin: "10px 0 0",
-                fontSize: "15px",
+                fontSize: "14px",
                 lineHeight: 1.6,
-                color: "#526277",
+                color: "#4b5563",
               }}
             >
               Cấu hình voice (TTS) cho chức năng gọi số tiếp theo và gọi lại số.
@@ -193,15 +196,15 @@ export default function SettingsPage() {
             <div>
               <div
                 style={{
-                  fontSize: "18px",
-                  fontWeight: 700,
-                  color: "#16324f",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  color: "#1f2937",
                   marginBottom: "6px",
                 }}
               >
                 Bật/Tắt Voice
               </div>
-              <div style={{ fontSize: "14px", color: "#5d6b7c" }}>
+              <div style={{ fontSize: "14px", color: "#4b5563" }}>
                 Trạng thái hiện tại:{" "}
                 <strong>{enabled ? "Đang bật" : "Đang tắt"}</strong>
               </div>
@@ -251,7 +254,7 @@ export default function SettingsPage() {
             style={{
               marginTop: "16px",
               fontSize: "13px",
-              color: "#64748b",
+              color: "#6b7280",
             }}
           >
             {loading
@@ -267,19 +270,19 @@ export default function SettingsPage() {
             <h2
               style={{
                 margin: 0,
-                fontSize: "28px",
-                fontWeight: 800,
-                color: "#003366",
+                fontSize: "20px",
+                fontWeight: 600,
+                color: "#1f2937",
               }}
             >
-              Tự động reset ticket
+              Tự động reset vé theo thời gian
             </h2>
             <p
               style={{
                 margin: "10px 0 0",
-                fontSize: "15px",
+                fontSize: "14px",
                 lineHeight: 1.6,
-                color: "#526277",
+                color: "#4b5563",
               }}
             >
               Chọn trạng thái bật/tắt và thời gian reset hằng ngày theo quyết định
@@ -303,15 +306,15 @@ export default function SettingsPage() {
             <div>
               <div
                 style={{
-                  fontSize: "18px",
-                  fontWeight: 700,
-                  color: "#16324f",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  color: "#1f2937",
                   marginBottom: "6px",
                 }}
               >
                 Bật/Tắt Auto Reset
               </div>
-              <div style={{ fontSize: "14px", color: "#5d6b7c" }}>
+              <div style={{ fontSize: "14px", color: "#4b5563" }}>
                 Trạng thái hiện tại:{" "}
                 <strong>{autoResetEnabled ? "Đang bật" : "Đang tắt"}</strong>
               </div>
@@ -371,8 +374,8 @@ export default function SettingsPage() {
                   display: "block",
                   marginBottom: "8px",
                   fontSize: "14px",
-                  fontWeight: 700,
-                  color: "#16324f",
+                  fontWeight: 600,
+                  color: "#1f2937",
                 }}
               >
                 Giờ reset mỗi ngày
@@ -421,7 +424,7 @@ export default function SettingsPage() {
             style={{
               marginTop: "16px",
               fontSize: "13px",
-              color: "#64748b",
+              color: "#6b7280",
             }}
           >
             {loading

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { RiVolumeMuteLine, RiVolumeUpLine } from "react-icons/ri";
 import { Ticket, Counter, Service } from "@/types/queue";
 import Toast from "@/components/Toast";
 import ConfirmModal from "@/components/ConfirmModal";
@@ -15,6 +16,7 @@ import {
   getRecallList,
   recallTicket,
   recallProcessingTicketApi,
+  getTtsEnabledStatus,
 } from "@/services/ticket.service";
 import {
   StaffDisplayUpdatedPayload,
@@ -29,6 +31,18 @@ const getTicketDisplayNumber = (ticket?: Ticket | null) =>
   ticket?.displayNumber ||
   ticket?.formattedNumber ||
   String(ticket?.number ?? "").padStart(3, "0");
+
+const buildTicketCallConfirmMessage = (
+  ticket: Ticket,
+  actionLabel: "gọi" | "gọi lại",
+) =>
+  [
+    `Xác nhận ${actionLabel} người này?`,
+    "",
+    `Số phiếu: ${getTicketDisplayNumber(ticket)}`,
+    `Đương sự: ${ticket.customerName || "Chưa có thông tin"}`,
+    `Quầy: ${ticket.serviceName || "Chưa có thông tin"}`,
+  ].join("\n");
 
 export default function StaffCounterPage() {
   const params = useParams();
@@ -47,6 +61,7 @@ export default function StaffCounterPage() {
   const [currentTicket, setCurrentTicket] = useState<Ticket | null>(null);
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
+  const [ttsEnabled, setTtsEnabled] = useState(false);
   const [toast, setToast] = useState<{
     isOpen: boolean;
     message: string;
@@ -248,6 +263,38 @@ export default function StaffCounterPage() {
     };
   }, [authenticated, counterId, staffId]);
 
+  useEffect(() => {
+    if (!authenticated) {
+      return;
+    }
+
+    let active = true;
+
+    const syncTtsStatus = async () => {
+      try {
+        const enabled = await getTtsEnabledStatus();
+        if (active) {
+          setTtsEnabled(enabled);
+        }
+      } catch (error) {
+        console.error("Failed to load TTS status:", error);
+        if (active) {
+          setTtsEnabled(false);
+        }
+      }
+    };
+
+    void syncTtsStatus();
+    const intervalId = window.setInterval(() => {
+      void syncTtsStatus();
+    }, 3000);
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, [authenticated]);
+
   const handleCallNext = async () => {
     if (currentTicket) {
       try {
@@ -271,14 +318,33 @@ export default function StaffCounterPage() {
       return;
     }
 
-    const nextTicket = waitingTickets[0];
-    if (!nextTicket) {
-      showToast("Không có vé nào trong hàng chờ!", "warning");
-      return;
-    }
-
     try {
-      const response = await callTicketById(nextTicket.id, counterId);
+      if (activeTab === "recall") {
+        const nextRecallTicket = recallTickets[0];
+        if (!nextRecallTicket) {
+          showToast("Không có vé nào trong danh sách bỏ qua!", "warning");
+          return;
+        }
+
+        const response = await recallTicket(
+          nextRecallTicket.id || (nextRecallTicket as Ticket & { _id?: string })._id || "",
+        );
+        if (response.success) {
+          showToast("Đang gọi lại!", "success");
+          void handleRecallListRefresh();
+        } else {
+          showToast(response.message || "Không thể gọi lại vé!", "error");
+        }
+        return;
+      }
+
+      const nextWaitingTicket = waitingTickets[0];
+      if (!nextWaitingTicket) {
+        showToast("Không có vé nào trong hàng chờ!", "warning");
+        return;
+      }
+
+      const response = await callTicketById(nextWaitingTicket.id, counterId);
       if (response.success) {
         showToast(response.message || "Đang gọi vé!", "success");
       } else {
@@ -294,7 +360,12 @@ export default function StaffCounterPage() {
         return;
       }
       console.error("Call ticket error:", error);
-      showToast("Lỗi hệ thống khi đang gọi vé!", "error");
+      showToast(
+        activeTab === "recall"
+          ? "Lỗi hệ thống khi đang gọi lại vé!"
+          : "Lỗi hệ thống khi đang gọi vé!",
+        "error",
+      );
     }
   };
 
@@ -339,6 +410,99 @@ export default function StaffCounterPage() {
       }
       showToast("Lỗi hệ thống khi gọi lại vé!", "error");
     }
+  };
+
+  const handleConfirmCallNext = () => {
+    if (currentTicket) {
+      setConfirmModal({
+        isOpen: true,
+        title: "Xác nhận gọi lại",
+        message: buildTicketCallConfirmMessage(currentTicket, "gọi lại"),
+        onConfirm: async () => {
+          try {
+            await handleCallNext();
+          } finally {
+            setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+          }
+        },
+      });
+      return;
+    }
+
+    if (activeTab === "recall") {
+      const nextRecallTicket = recallTickets[0];
+
+      if (!nextRecallTicket) {
+        showToast("Không có vé nào trong danh sách bỏ qua!", "warning");
+        return;
+      }
+
+      setConfirmModal({
+        isOpen: true,
+        title: "Xác nhận gọi lại",
+        message: buildTicketCallConfirmMessage(nextRecallTicket, "gọi lại"),
+        onConfirm: async () => {
+          try {
+            await handleCallNext();
+          } finally {
+            setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+          }
+        },
+      });
+      return;
+    }
+
+    const nextWaitingTicket = waitingTickets[0];
+
+    if (!nextWaitingTicket) {
+      showToast("Không có vé nào trong hàng chờ!", "warning");
+      return;
+    }
+
+    setConfirmModal({
+      isOpen: true,
+      title: "Xác nhận gọi người tiếp theo",
+      message: buildTicketCallConfirmMessage(nextWaitingTicket, "gọi"),
+      onConfirm: async () => {
+        try {
+          await handleCallNext();
+        } finally {
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
+  };
+
+  const handleConfirmCallWaitingTicket = (ticket: Ticket) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Xác nhận gọi vé",
+      message: buildTicketCallConfirmMessage(ticket, "gọi"),
+      onConfirm: async () => {
+        try {
+          await handleCallWaitingTicket(ticket.id);
+        } finally {
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
+  };
+
+  const handleConfirmRecallTicketAction = (ticket: Ticket) => {
+    const ticketId = ticket.id || (ticket as Ticket & { _id?: string })._id || "";
+
+    setConfirmModal({
+      isOpen: true,
+      title: "Xác nhận gọi lại",
+      message: buildTicketCallConfirmMessage(ticket, "gọi lại"),
+      onConfirm: async () => {
+        try {
+          await handleRecallTicketAction(ticketId);
+        } finally {
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
   };
 
   const handleComplete = async () => {
@@ -496,7 +660,7 @@ export default function StaffCounterPage() {
         }}
       >
         <div style={{ color: "#666", fontSize: "clamp(14px, 1.1vw, 18px)" }}>
-          {staffName && `Xin chào: ${staffName}`}{" "}
+          {staffName && `Xin chào: ${staffName}`} 
           {restricted && (
             <span
               style={{
@@ -512,22 +676,62 @@ export default function StaffCounterPage() {
             </span>
           )}
         </div>
-        <button
-          onClick={handleLogout}
-          className="staff-page__logout"
+        <div
           style={{
-            padding: "clamp(10px, 1vh, 12px) clamp(16px, 1.4vw, 22px)",
-            fontSize: "clamp(14px, 1.1vw, 18px)",
-            fontWeight: 600,
-            background: "#dc3545",
-            color: "white",
-            border: "none",
-            borderRadius: 8,
-            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            marginLeft: "auto",
           }}
         >
-          Đăng xuất
-        </button>
+          <div
+            title={ttsEnabled ? "Loa đang bật" : "Loa đang tắt"}
+            aria-label={ttsEnabled ? "Loa đang bật" : "Loa đang tắt"}
+            style={{
+              position: "relative",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 48,
+              height: 48,
+              borderRadius: 12,
+              border: `2px solid ${ttsEnabled ? "#16a34a" : "#dc2626"}`,
+              background: ttsEnabled ? "#f0fdf4" : "#fef2f2",
+              color: ttsEnabled ? "#15803d" : "#dc2626",
+              flexShrink: 0,
+            }}
+          >
+            {ttsEnabled ? <RiVolumeUpLine size={24} /> : <RiVolumeMuteLine size={24} />}
+            {!ttsEnabled && (
+              <span
+                style={{
+                  position: "absolute",
+                  width: 30,
+                  height: 3,
+                  background: "#dc2626",
+                  transform: "rotate(-45deg)",
+                  borderRadius: 999,
+                }}
+              />
+            )}
+          </div>
+          <button
+            onClick={handleLogout}
+            className="staff-page__logout"
+            style={{
+              padding: "clamp(10px, 1vh, 12px) clamp(16px, 1.4vw, 22px)",
+              fontSize: "clamp(14px, 1.1vw, 18px)",
+              fontWeight: 600,
+              background: "#dc3545",
+              color: "white",
+              border: "none",
+              borderRadius: 8,
+              cursor: "pointer",
+            }}
+          >
+            {"Đăng xuất"}
+          </button>
+        </div>
       </div>
 
       <div
@@ -705,7 +909,7 @@ export default function StaffCounterPage() {
                       </td>
                       <td style={{ padding: "clamp(8px, 0.95vh, 12px) 10px" }}>
                         <button
-                          onClick={() => handleCallWaitingTicket(ticket.id)}
+                          onClick={() => handleConfirmCallWaitingTicket(ticket)}
                           style={{
                             padding: "6px 12px",
                             background: "#003366",
@@ -788,11 +992,7 @@ export default function StaffCounterPage() {
                     </td>
                     <td style={{ padding: "clamp(8px, 0.95vh, 12px) 10px" }}>
                       <button
-                        onClick={() =>
-                          handleRecallTicketAction(
-                            ticket.id || (ticket as Ticket & { _id?: string })._id || "",
-                          )
-                        }
+                        onClick={() => handleConfirmRecallTicketAction(ticket)}
                         style={{
                           padding: "6px 12px",
                           background: "#003366",
@@ -922,7 +1122,7 @@ export default function StaffCounterPage() {
               <button
                 type="button"
                 onClick={handleBackToWaiting}
-                disabled={!currentTicket}
+                disabled={!currentTicket || activeTab === "recall"}
                 onMouseEnter={() => setHovered("back")}
                 onMouseLeave={() => setHovered(null)}
                 style={{
@@ -931,20 +1131,20 @@ export default function StaffCounterPage() {
                   fontSize: "clamp(18px, 1.8vw, 28px)",
                   fontWeight: 700,
                   background:
-                    hovered === "back" && currentTicket
+                    hovered === "back" && currentTicket && activeTab !== "recall"
                       ? "#003366"
-                      : currentTicket
+                      : currentTicket && activeTab !== "recall"
                         ? "#f3f4f6"
                         : "#f0f0f0",
                   color:
-                    hovered === "back" && currentTicket
+                    hovered === "back" && currentTicket && activeTab !== "recall"
                       ? "white"
-                      : currentTicket
-                        ? "#111827"
-                        : "#6b7280",
-                  border: `2px solid ${currentTicket ? "#003366" : "#ccc"}`,
+                      : currentTicket && activeTab !== "recall"
+                        ? "#000000"
+                        : "#000000",
+                  border: `2px solid ${currentTicket && activeTab !== "recall" ? "#003366" : "#ccc"}`,
                   borderRadius: 10,
-                  cursor: currentTicket ? "pointer" : "not-allowed",
+                  cursor: currentTicket && activeTab !== "recall" ? "pointer" : "not-allowed",
                   transition: "all 0.2s ease",
                 }}
               >
@@ -952,7 +1152,7 @@ export default function StaffCounterPage() {
               </button>
 
               <button
-                onClick={handleCallNext}
+                onClick={handleConfirmCallNext}
                 onMouseEnter={() => setHovered("call")}
                 onMouseLeave={() => setHovered(null)}
                 style={{
