@@ -1,16 +1,14 @@
 "use client";
 
 import { useCallback } from "react";
-import { useRouter } from "next/navigation";
 import {
   ADMIN_AUTH_EXPIRED_ERROR,
   clearAdminSession,
   isAuthExpiredMessage,
 } from "@/lib/admin-auth";
+import { redirectToRoleUrl } from "@/lib/role-routing";
 
 export function useAdminSessionGuard() {
-  const router = useRouter();
-
   return useCallback(
     (error: unknown) => {
       const message = error instanceof Error ? error.message : String(error || "");
@@ -20,12 +18,12 @@ export function useAdminSessionGuard() {
         isAuthExpiredMessage(message)
       ) {
         clearAdminSession();
-        router.replace("/login?reason=session_expired");
+        redirectToRoleUrl("admin", "/login?reason=session_expired");
         return true;
       }
 
       return false;
     },
-    [router],
+    [],
   );
 }

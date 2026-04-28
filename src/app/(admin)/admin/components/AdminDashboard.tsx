@@ -528,12 +528,7 @@ export default function AdminDashboard() {
               value={formatUnit(overview.summary.ticketsCompletedToday, "vé")}
               hint={`${formatNumber(overview.summary.ticketsIssuedToday)} vé phát hành hôm nay`}
             />
-            <MetricCard
-              icon={<FiClock />}
-              label="Thời gian xử lý TB"
-              value={formatMinutes(overview.summary.averageHandleTimeInMinutes)}
-              hint={`${formatNumber(overview.summary.assignedStaff)}/${formatNumber(overview.summary.totalStaff)} nhân sự đã gán quầy`}
-            />
+            
           </div>
         </section>
 
@@ -689,9 +684,7 @@ export default function AdminDashboard() {
                   Theo mốc thời gian trong ngày {dailyReport.label}.
                 </div>
               </div>
-              <span className={styles.chipSuccess}>
-                TB xử lý {formatMinutes(dailyReport.summary.averageHandleTimeInMinutes)}
-              </span>
+              
             </div>
             <div className={styles.chartWrap}>
               {dailyLineData && (

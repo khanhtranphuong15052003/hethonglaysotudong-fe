@@ -1,8 +1,19 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
+import {
+  getCurrentPathWithSearch,
+  isCurrentRolePort,
+  redirectToRoleUrl,
+} from "@/lib/role-routing";
 
 export default function StaffLayout({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    if (!isCurrentRolePort("staff")) {
+      redirectToRoleUrl("staff", getCurrentPathWithSearch());
+    }
+  }, []);
+
   return (
     <div
       style={{
@@ -12,7 +23,6 @@ export default function StaffLayout({ children }: { children: ReactNode }) {
         width: "100%",
       }}
     >
-      {/* Content wrapper - centered and consistent */}
       <div
         style={{
           flex: 1,

@@ -1,9 +1,12 @@
 import type { NextConfig } from "next";
 
+const role = process.env.NEXT_PUBLIC_APP_ROLE; // "staff" | "admin"
+
 const nextConfig: NextConfig = {
-     allowedDevOrigins: ["192.168.1.102"], 
+  distDir: role ? `.next-${role}` : ".next",
+  allowedDevOrigins: ["192.168.1.32"], 
   async rewrites() {
-      const backendUrl = process.env.BACKEND_API_URL || "http://192.168.1.102:6060"; 
+      const backendUrl = process.env.BACKEND_API_URL || "http://192.168.1.32:6060"; 
     return [
       {
         source: "/api/:path*",

@@ -431,7 +431,7 @@ export default function SettingsPage() {
               ? "Đang tải cấu hình auto reset..."
               : savingAutoReset
                 ? "Đang cập nhật auto reset..."
-                : "Giờ reset dùng định dạng 24h HH:MM và backend sẽ kiểm tra theo phút."}
+                : "Giờ reset dùng định dạng 24h"}
           </div>
         </div>
       </div>

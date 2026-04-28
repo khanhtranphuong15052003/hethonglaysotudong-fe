@@ -1,33 +1,38 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Toast from "@/components/Toast";
+import { isCurrentRolePort, redirectToRoleUrl } from "@/lib/role-routing";
 import { loginAdmin } from "@/services/auth.service";
 
 const MAX_CREDENTIAL_LENGTH = 25;
 
 function AdminLoginContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
+  const reason = searchParams.get("reason");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState({
-    isOpen: false,
-    message: "",
-    type: "info" as "success" | "error" | "warning" | "info",
-  });
+  const [toast, setToast] = useState(() =>
+    reason === "session_expired"
+      ? {
+          isOpen: true,
+          message: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+          type: "warning" as const,
+        }
+      : {
+          isOpen: false,
+          message: "",
+          type: "info" as const,
+        },
+  );
 
   useEffect(() => {
-    const reason = searchParams.get("reason");
-    if (reason === "session_expired") {
-      setToast({
-        isOpen: true,
-        message: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
-        type: "warning",
-      });
+    if (!isCurrentRolePort("admin")) {
+      const query = searchParams.toString();
+      redirectToRoleUrl("admin", query ? `/login?${query}` : "/login");
     }
   }, [searchParams]);
 
@@ -84,7 +89,7 @@ function AdminLoginContent() {
         });
 
         setTimeout(() => {
-          router.push("/admin");
+          redirectToRoleUrl("admin", "/admin", false);
         }, 1000);
       } else {
         setToast({

@@ -1,5 +1,7 @@
 "use client";
 
+import { redirectToRoleUrl } from "@/lib/role-routing";
+
 export const ADMIN_AUTH_EXPIRED_ERROR = "ADMIN_AUTH_EXPIRED";
 
 const AUTH_KEYWORDS = [
@@ -29,5 +31,5 @@ export const clearAdminSession = () => {
 export const redirectToAdminLogin = () => {
   if (typeof window === "undefined") return;
   clearAdminSession();
-  window.location.replace("/login?reason=session_expired");
+  redirectToRoleUrl("admin", "/login?reason=session_expired");
 };

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -277,7 +277,7 @@ export default function CounterDisplayPage() {
           style={{
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
+            justifyContent: "flex-start",
             gap: "clamp(8px, 1vw, 14px)",
             minWidth: 0,
             flex: "1 1 auto",
@@ -542,7 +542,7 @@ paddingBottom: "clamp(12px, 1.2vh, 18px)",
                     style={{
                       padding: "clamp(8px, 0.8vh, 12px) clamp(8px, 1vw, 16px)",
                       textAlign: "center",
-                      fontWeight: 800,
+                      fontWeight: 900,
                       color: textColor,
                       fontSize: "clamp(30px, 3vw, 46px)",
                       borderRight: "1px solid rgba(0, 0, 0, 0.12)",
@@ -578,7 +578,7 @@ paddingBottom: "clamp(12px, 1.2vh, 18px)",
                       padding: "clamp(8px, 0.8vh, 12px) clamp(8px, 1vw, 16px)",
                       textAlign: "center",
                       color: textColor,
-                      fontSize: "clamp(22px, 2.2vw, 34px)",
+                      fontSize: "clamp(32px, 3.5vw, 56px)",
                       borderRight: "1px solid rgba(0, 0, 0, 0.12)",
                       overflow: "hidden",
                       height: "100%",
@@ -601,8 +601,8 @@ paddingBottom: "clamp(12px, 1.2vh, 18px)",
                     >
                       <div
                         style={{
-                          fontSize: "clamp(56px, 5.8vw, 88px)",
-                          fontWeight: 800,
+                        fontSize: "clamp(84px, 9vw, 140px)",
+                          fontWeight: 900,
                           letterSpacing: "1px",
                           lineHeight: 0.96,
                           color: textColor,

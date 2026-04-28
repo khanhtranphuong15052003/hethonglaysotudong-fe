@@ -425,7 +425,7 @@ export default function CounterTable() {
               className="text-2xl font-bold"
               style={{ marginTop: 0, marginBottom: 20 }}
             >
-              {editingId ? "Chỉnh sửa quầy" : "Thêm Quầy Mới"}
+              {editingId ? "Chỉnh sửa phòng" : "Thêm Phòng Mới"}
             </h3>
 
             <div
@@ -438,7 +438,7 @@ export default function CounterTable() {
               {/* Left Column - Form Fields */}
               <div>
                 <div className="admin-form-group">
-                  <label className="admin-form-label">Mã Quầy:</label>
+                  <label className="admin-form-label">Mã Phòng:</label>
                   <input
                     type="text"
                     className="admin-form-input"

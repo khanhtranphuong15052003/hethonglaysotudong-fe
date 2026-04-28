@@ -3,11 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "kill:dev": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'node.exe' -and $_.CommandLine -match 'DU_AN_STICKET\\\\DU_AN_STICKET' -and $_.CommandLine -match 'start-server\\.js' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue; Write-Output ('Stopped PID ' + $_.ProcessId) }\"",
-    "dev": "npm run kill:dev && next dev --webpack -p 9090",
+    "dev": "node scripts/run-next-pair.js dev",
+    "dev:staff": "node scripts/run-next-pair.js dev staff",
+    "dev:admin": "node scripts/run-next-pair.js dev admin",
     "dev:turbo": "next dev --turbopack",
     "build": "next build",
-    "start": "next start",
+    "start": "node scripts/run-next-pair.js start",
+    "start:staff": "node scripts/run-next-pair.js start staff",
+    "start:admin": "node scripts/run-next-pair.js start admin",
     "lint": "eslint"
   },
   "dependencies": {

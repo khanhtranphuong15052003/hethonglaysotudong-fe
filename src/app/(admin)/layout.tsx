@@ -2,9 +2,14 @@
 
 import Link from "next/link";
 import { CSSProperties, ReactNode, useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import ConfirmModal from "@/components/ConfirmModal";
 import { clearAdminSession } from "@/lib/admin-auth";
+import {
+  getCurrentPathWithSearch,
+  isCurrentRolePort,
+  redirectToRoleUrl,
+} from "@/lib/role-routing";
 import {
   FiActivity,
   FiGrid,
@@ -40,7 +45,6 @@ const navItems: NavItem[] = [
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  const router = useRouter();
   const pathname = usePathname();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
@@ -49,10 +53,15 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   const handleSessionExpired = () => {
     clearAdminSession();
-    router.replace("/login?reason=session_expired");
+    redirectToRoleUrl("admin", "/login?reason=session_expired");
   };
 
   useEffect(() => {
+    if (!isCurrentRolePort("admin")) {
+      redirectToRoleUrl("admin", getCurrentPathWithSearch());
+      return;
+    }
+
     if (isLoginPage) {
       return;
     }
@@ -61,19 +70,19 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     const user = localStorage.getItem("adminUser");
 
     if (!token) {
-      router.replace("/login");
+      redirectToRoleUrl("admin", "/login");
       return;
     }
 
     try {
       if (user) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setAdminUser(JSON.parse(user));
       }
       setIsLoggedIn(true);
     } catch {
       handleSessionExpired();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoginPage]);
 
   const handleLogout = () => {
@@ -83,7 +92,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const handleConfirmLogout = () => {
     setShowLogoutConfirm(false);
     clearAdminSession();
-    router.replace("/login");
+    redirectToRoleUrl("admin", "/login");
   };
 
   const activeIndex = navItems.reduce((matchedIndex, item, index) => {

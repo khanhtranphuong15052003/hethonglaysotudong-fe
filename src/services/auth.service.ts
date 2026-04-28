@@ -55,8 +55,8 @@ export interface StaffLoginResponse {
       id: string;
       username: string;
       fullName: string;
-      role: "staff";
-      counterId: string;
+      role: "staff" | "admin";
+      counterId?: string;
     };
   };
   message?: string;

@@ -560,7 +560,12 @@ export default function AdminDashboardTech() {
             <MetricCard icon={<FiLayers />} label="Tổng hàng chờ" value={formatUnit(overview.summary.totalWaiting, "vé")} hint={`${formatUnit(overview.summary.totalServices, "quầy")} đang hoạt động`} />
             <MetricCard icon={<FiActivity />} label="Đang xử lý" value={formatUnit(overview.summary.totalProcessing, "vé")} hint={`${formatUnit(overview.summary.activeCounters, "quầy")} đang mở`} />
             <MetricCard icon={<FiCheckCircle />} label="Hoàn tất hôm nay" value={formatUnit(overview.summary.ticketsCompletedToday, "vé")} hint={`${formatUnit(overview.summary.ticketsIssuedToday, "vé")} phát hành hôm nay`} />
-            <MetricCard icon={<FiClock />} label="Thời gian xử lý TB" value={formatMinutes(overview.summary.averageHandleTimeInMinutes)} hint={`${formatUnit(overview.summary.assignedStaff, "nhân sự")}/${formatUnit(overview.summary.totalStaff, "nhân sự")} đã gán quầy`} />
+           <MetricCard
+  icon={<FiClock />}
+  label="Nhân sự"
+  value={formatUnit(overview.summary.assignedStaff, "nhân sự")}
+  hint={`${formatUnit(overview.summary.assignedStaff, "nhân sự")}/${formatUnit(overview.summary.totalStaff, "nhân sự")} đã gán quầy`}
+/>
           </div>
         </section>
 
@@ -676,7 +681,7 @@ export default function AdminDashboardTech() {
                 <h2 className={styles.panelTitle}>Xu hướng báo cáo ngày</h2>
                 <div className={styles.muted}>Theo mốc thời gian trong ngày {dailyReport.label}.</div>
               </div>
-              <span className={styles.chipSuccess}>TB xử lý {formatMinutes(dailyReport.summary.averageHandleTimeInMinutes)}</span>
+              {/* <span className={styles.chipSuccess}>TB xử lý {formatMinutes(dailyReport.summary.averageHandleTimeInMinutes)}</span> */}
             </div>
             <div className={styles.chartWrap}>
               <Line data={dailyLineData} options={{ ...chartOptionsBase, scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: "rgba(15, 34, 56, 0.08)" } } }, plugins: { ...chartOptionsBase.plugins, tooltip: { ...chartOptionsBase.plugins.tooltip, callbacks: { label: (context) => `${context.dataset.label || "Dữ liệu"}: ${formatUnit(Number(context.parsed.y ?? 0), "vé")}` } } } }} />
@@ -719,7 +724,7 @@ export default function AdminDashboardTech() {
           <ServiceTable services={dailyReport.services} />
         </section>
 
-        {overview.alerts.length > 0 && (
+        {/* {overview.alerts.length > 0 && (
           <section className={styles.panel}>
             <div className={styles.panelHead}>
               <div>
@@ -736,7 +741,7 @@ export default function AdminDashboardTech() {
               ))}
             </div>
           </section>
-        )}
+        )} */}
       </div>
     </div>
   );

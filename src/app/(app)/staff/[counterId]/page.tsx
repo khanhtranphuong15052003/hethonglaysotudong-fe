@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -660,7 +660,7 @@ export default function StaffCounterPage() {
         }}
       >
         <div style={{ color: "#666", fontSize: "clamp(14px, 1.1vw, 18px)" }}>
-          {staffName && `Xin chào: ${staffName}`} 
+          {staffName && ` ${staffName}`} 
           {restricted && (
             <span
               style={{
@@ -672,7 +672,7 @@ export default function StaffCounterPage() {
                 borderRadius: "4px",
               }}
             >
-              Đang áp dụng giới hạn quầy: {assignedServices.map((s) => s.name).join(", ")}
+            {assignedServices.map((s) => s.name).join(", ")}
             </span>
           )}
         </div>
@@ -1056,12 +1056,12 @@ export default function StaffCounterPage() {
               style={{
                 margin: "0 0 20px 0",
                 color: "#003366",
-                fontSize: "clamp(32px, 3vw, 48px)",
+              fontSize: "clamp(28px, 2.5vw, 40px)",
                 fontWeight: 700,
                 textAlign: "center",
               }}
             >
-              Vé đang xử lý
+              Đương sự đang xử lý
             </h2>
             {currentTicket ? (
               <div

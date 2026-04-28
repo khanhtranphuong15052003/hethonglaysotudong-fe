@@ -1,42 +1,47 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { loginStaff } from "@/services/auth.service";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Toast from "@/components/Toast";
+import { buildRoleUrl, isCurrentRolePort, redirectToRoleUrl } from "@/lib/role-routing";
+import { loginStaff } from "@/services/auth.service";
 
 function StaffLoginContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
+  const reason = searchParams.get("reason");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState({
-    isOpen: false,
-    message: "",
-    type: "info" as "success" | "error" | "warning" | "info",
-  });
+  const [toast, setToast] = useState(() =>
+    reason === "session_expired"
+      ? {
+          isOpen: true,
+          message: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+          type: "warning" as const,
+        }
+      : {
+          isOpen: false,
+          message: "",
+          type: "info" as const,
+        },
+  );
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (redirectUrl) {
-      console.log("Redirecting to:", redirectUrl);
       const timer = setTimeout(() => {
-        router.push(redirectUrl);
-      }, 1500); // Giữ lại delay để người dùng đọc toast
+        window.location.assign(redirectUrl);
+      }, 1500);
+
       return () => clearTimeout(timer);
     }
-  }, [redirectUrl, router]);
+  }, [redirectUrl]);
 
   useEffect(() => {
-    const reason = searchParams.get("reason");
-    if (reason === "session_expired") {
-      setToast({
-        isOpen: true,
-        message: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
-        type: "warning",
-      });
+    if (!isCurrentRolePort("staff")) {
+      const query = searchParams.toString();
+      redirectToRoleUrl("staff", query ? `/staff/login?${query}` : "/staff/login");
     }
   }, [searchParams]);
 
@@ -45,7 +50,6 @@ function StaffLoginContent() {
     setLoading(true);
 
     try {
-      // Validate input
       if (!username.trim() || !password.trim()) {
         setToast({
           isOpen: true,
@@ -61,7 +65,23 @@ function StaffLoginContent() {
       if (response.success && response.data) {
         const { token, user } = response.data;
 
-        // Lưu vào sessionStorage (mỗi tab riêng biệt)
+        if (user.role === "admin") {
+          if (typeof window !== "undefined") {
+            sessionStorage.removeItem("staffToken");
+            sessionStorage.removeItem("staffUser");
+            localStorage.setItem("adminToken", token);
+            localStorage.setItem("adminUser", JSON.stringify(user));
+          }
+
+          setToast({
+            isOpen: true,
+            message: "Đăng nhập quản trị thành công, đang chuyển sang cổng admin...",
+            type: "success",
+          });
+          setRedirectUrl(buildRoleUrl("admin", "/admin"));
+          return;
+        }
+
         if (typeof window !== "undefined") {
           sessionStorage.setItem("staffToken", token);
           sessionStorage.setItem("staffUser", JSON.stringify(user));
@@ -74,9 +94,8 @@ function StaffLoginContent() {
         });
 
         if (user.counterId) {
-          setRedirectUrl(`/staff/${user.counterId}`);
+          setRedirectUrl(buildRoleUrl("staff", `/staff/${user.counterId}`));
         } else {
-          // Xử lý trường hợp staff chưa được gán quầy
           setToast({
             isOpen: true,
             message: "Tài khoản chưa được gán quầy. Vui lòng liên hệ quản trị viên.",
@@ -87,16 +106,20 @@ function StaffLoginContent() {
       } else {
         setToast({
           isOpen: true,
-          message: response.message || "Tên đăng nhập hoặc mật khẩu không đúng",
+          message:
+            response.message || "Tên đăng nhập hoặc mật khẩu không đúng",
           type: "error",
         });
         setLoading(false);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Login error:", error);
       setToast({
         isOpen: true,
-        message: error.message || "Lỗi đăng nhập, vui lòng thử lại",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Lỗi đăng nhập, vui lòng thử lại",
         type: "error",
       });
       setLoading(false);
@@ -127,7 +150,6 @@ function StaffLoginContent() {
       </h1>
 
       <form onSubmit={handleLogin}>
-        {/* Username */}
         <div style={{ marginBottom: 24 }}>
           <label
             style={{
@@ -157,7 +179,6 @@ function StaffLoginContent() {
           />
         </div>
 
-        {/* Password */}
         <div style={{ marginBottom: 28 }}>
           <label
             style={{
@@ -212,7 +233,6 @@ function StaffLoginContent() {
           </div>
         </div>
 
-        {/* Submit button */}
         <button
           type="submit"
           disabled={loading}
@@ -249,8 +269,6 @@ function StaffLoginContent() {
         type={toast.type}
         onClose={() => setToast({ ...toast, isOpen: false })}
       />
-
-      {/* Demo Info */}
     </div>
   );
 }
