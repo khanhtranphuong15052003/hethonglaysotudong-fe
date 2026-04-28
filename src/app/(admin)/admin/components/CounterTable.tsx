@@ -155,12 +155,7 @@ export default function CounterTable() {
 
   const handleSave = async () => {
     if (!formData.code || !formData.name) {
-      error("Vui lòng nhập mã và tên quầy");
-      return;
-    }
-
-    if (selectedServices.length === 0) {
-      error("Vui lòng chọn ít nhất một quầy");
+      error("Vui lòng nhập mã và tên phòng");
       return;
     }
 
@@ -177,15 +172,22 @@ export default function CounterTable() {
         const removedServiceIds = initialServices.filter(
           (serviceId) => !selectedServices.includes(serviceId),
         );
-        await Promise.all(
-          removedServiceIds.map((serviceId) =>
-            removeServiceFromCounter(editingId, serviceId),
-          ),
-        );
+        if (removedServiceIds.length > 0) {
+          await Promise.all(
+            removedServiceIds.map((serviceId) =>
+              removeServiceFromCounter(editingId, serviceId),
+            ),
+          );
+        }
 
-        // Đồng bộ danh sách quầy sau khi cập nhật thông tin quầy
-        await addServicesToCounter(editingId, selectedServices);
-        success("Cập nhật quầy thành công");
+        const addedServiceIds = selectedServices.filter(
+          (serviceId) => !initialServices.includes(serviceId),
+        );
+        if (addedServiceIds.length > 0) {
+          await addServicesToCounter(editingId, addedServiceIds);
+        }
+
+        success("Cập nhật phòng thành công");
         fetchCounters();
         handleCloseModal();
       } else {
@@ -195,16 +197,18 @@ export default function CounterTable() {
           number: formData.number,
           note: formData.note,
           isActive: formData.isActive,
-          serviceIds: selectedServices,
         });
-        // Thêm services cho counter
-        await addServicesToCounter(result._id, selectedServices);
-        success("Tạo quầy thành công");
+        
+        if (selectedServices.length > 0) {
+          await addServicesToCounter(result._id, selectedServices);
+        }
+        
+        success("Tạo phòng thành công");
         fetchCounters();
         handleCloseModal();
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Lỗi lưu quầy";
+      const errorMessage = err instanceof Error ? err.message : "Lỗi lưu phòng";
       error(errorMessage);
     }
   };

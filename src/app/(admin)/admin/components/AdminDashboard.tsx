@@ -495,7 +495,7 @@ export default function AdminDashboard() {
             </div>
             <div className={styles.heroMeta}>
               <div className={styles.metaCard}>
-                <span className={styles.metaLabel}>Dữ liệu realtime</span>
+                <span className={styles.metaLabel}>Dữ liệu</span>
                 <div className={styles.metaValue}>
                   Cập nhật lúc {formatDateTime(overview.generatedAt)}
                 </div>

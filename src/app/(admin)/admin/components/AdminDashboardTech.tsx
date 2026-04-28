@@ -546,18 +546,18 @@ export default function AdminDashboardTech() {
             </div>
             <div className={styles.heroMeta}>
               <div className={styles.metaCard}>
-                <span className={styles.metaLabel}>Dữ liệu realtime</span>
+                <span className={styles.metaLabel}>Dữ liệu</span>
                 <div className={styles.metaValue}>Cập nhật lúc {formatDateTime(overview.generatedAt)}</div>
               </div>
               <div className={styles.metaCard}>
-                <span className={styles.metaLabel}>Kỳ báo cáo đang xem</span>
+                <span className={styles.metaLabel}>Báo cáo đang xem</span>
                 <div className={styles.metaValue}>Ngày {dailyReport.label} và tháng {monthlyReport.label}</div>
               </div>
             </div>
           </div>
 
           <div className={styles.statGrid}>
-            <MetricCard icon={<FiLayers />} label="Tổng hàng chờ" value={formatUnit(overview.summary.totalWaiting, "vé")} hint={`${formatUnit(overview.summary.totalServices, "quầy")} đang hoạt động`} />
+            <MetricCard icon={<FiLayers />} label="Tổng vé chờ" value={formatUnit(overview.summary.totalWaiting, "vé")} hint={`${formatUnit(overview.summary.totalServices, "quầy")} đang hoạt động`} />
             <MetricCard icon={<FiActivity />} label="Đang xử lý" value={formatUnit(overview.summary.totalProcessing, "vé")} hint={`${formatUnit(overview.summary.activeCounters, "quầy")} đang mở`} />
             <MetricCard icon={<FiCheckCircle />} label="Hoàn tất hôm nay" value={formatUnit(overview.summary.ticketsCompletedToday, "vé")} hint={`${formatUnit(overview.summary.ticketsIssuedToday, "vé")} phát hành hôm nay`} />
            <MetricCard

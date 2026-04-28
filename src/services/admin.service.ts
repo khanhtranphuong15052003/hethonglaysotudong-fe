@@ -167,6 +167,14 @@ export async function createCounter(counterData: {
   });
   const data = await response.json();
   if (data.success) return data.data;
+  
+  if (Array.isArray(data.errors) && data.errors.length > 0) {
+    const errorMessages = data.errors
+      .map((err: { field?: string; message?: string }) => err.message || err.field || "Lỗi không xác định")
+      .join("; ");
+    throw new Error(errorMessages);
+  }
+
   throw new Error(data.message || "Lỗi tạo quầy");
 }
 
