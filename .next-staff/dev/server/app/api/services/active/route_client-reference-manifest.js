@@ -1,0 +1,1 @@
+globalThis.__RSC_MANIFEST=(globalThis.__RSC_MANIFEST||{});globalThis.__RSC_MANIFEST["/api/services/active/route"]={"moduleLoading":{"prefix":"/_next/"},"ssrModuleMapping":{},"edgeSSRModuleMapping":{},"clientModules":{},"entryCSSFiles":{"D:\\TICKET_TOA_AN\\FE_TOA_AN\\src\\app\\api\\services\\active\\route":[]},"rscModuleMapping":{},"edgeRscModuleMapping":{}};

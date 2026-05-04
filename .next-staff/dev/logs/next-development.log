@@ -1,0 +1,4 @@
+{"timestamp":"00:00:07.079","source":"Server","level":"LOG","message":""}
+{"timestamp":"00:00:15.529","source":"Server","level":"LOG","message":"○ Compiling / ..."}
+{"timestamp":"00:00:20.643","source":"Browser","level":"INFO","message":"%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"}
+{"timestamp":"00:00:21.329","source":"Browser","level":"LOG","message":"Error fetching weather: {}"}

@@ -1,0 +1,2 @@
+{"timestamp":"00:00:07.032","source":"Server","level":"LOG","message":""}
+{"timestamp":"00:00:07.955","source":"Browser","level":"ERROR","message":"uncaughtError: Error: Internal Next.js error: Router action dispatched before initialization."}

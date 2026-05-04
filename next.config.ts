@@ -1,9 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-     allowedDevOrigins: ["192.168.1.102"], 
+     allowedDevOrigins: ["192.168.1.10"], 
   async rewrites() {
-      const backendUrl = process.env.BACKEND_API_URL || "http://192.168.1.102:6060"; 
+      const backendUrl = process.env.BACKEND_API_URL || "http://192.168.1.10:6060"; 
     return [
       {
         source: "/api/:path*",
