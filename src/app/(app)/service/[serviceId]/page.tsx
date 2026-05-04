@@ -48,6 +48,7 @@ function ServiceTicketContent() {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [hasPrinted, setHasPrinted] = useState(false);
   const [confirmSubmitOpen, setConfirmSubmitOpen] = useState(false);
   const [countdown, setCountdown] = useState(60);
   const [fullName, setFullName] = useState("");
@@ -208,11 +209,12 @@ function ServiceTicketContent() {
   };
 
   const handlePrintTicket = async () => {
-    if (!ticket?._id || isPrinting) {
+    if (!ticket?._id || isPrinting || hasPrinted) {
       return;
     }
 
     setIsPrinting(true);
+    setHasPrinted(true);
     try {
       const result = await printTicket(ticket._id);
 
@@ -678,22 +680,26 @@ function ServiceTicketContent() {
             <button
               type="button"
               onClick={() => void handlePrintTicket()}
-              disabled={isPrinting || !ticket?._id}
+              disabled={isPrinting || hasPrinted || !ticket?._id}
               style={{
                 width: "100%",
                 padding: "18px 18px",
                 borderRadius: 12,
                 border: "1px solid #0f7a35",
-                background: isPrinting ? "#7bbf8f" : "green",
+                background: isPrinting || hasPrinted ? "#7bbf8f" : "green",
                 color: "white",
                 fontSize: 18,
                 fontWeight: 700,
-                cursor: isPrinting ? "not-allowed" : "pointer",
+                cursor: isPrinting || hasPrinted ? "not-allowed" : "pointer",
                 marginBottom: 26,
-                opacity: isPrinting ? 0.85 : 1,
+                opacity: isPrinting || hasPrinted ? 0.85 : 1,
               }}
             >
-              {isPrinting ? "DANG GUI LENH IN..." : "TÔI MUỐN IN VÉ"}
+              {isPrinting
+                ? "ĐANG IN VÉ..."
+                : hasPrinted
+                  ? "ĐÃ GỬI LỆNH IN"
+                  : "TÔI MUỐN IN VÉ"}
             </button>
             <p style={{ fontSize: 20, color: "#64748b", margin: "0 0 18px 0" }}>HOẶC</p>
             <button

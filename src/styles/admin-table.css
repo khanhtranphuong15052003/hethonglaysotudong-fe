@@ -570,6 +570,11 @@ table.admin-table td {
   font-size: 16px;
 }
 
+.admin-empty-info {
+  color: #dc3545;
+  font-weight: 600;
+}
+
 .admin-table-footer {
   padding: 12px 20px; /* Reduced padding */
   background: #f8f9fa;

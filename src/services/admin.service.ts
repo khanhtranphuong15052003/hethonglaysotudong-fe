@@ -158,7 +158,7 @@ export async function createCounter(counterData: {
   number: number;
   note: string;
   isActive?: boolean;
-  serviceIds?: string[];
+  serviceIds?: string[] | string;
 }): Promise<Counter> {
   const response = await fetch(`${API_BASE}/counters`, {
     method: "POST",

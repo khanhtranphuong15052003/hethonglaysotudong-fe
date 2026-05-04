@@ -159,11 +159,6 @@ export default function CounterTable() {
       return;
     }
 
-    if (selectedServices.length === 0) {
-      error("Vui lòng chọn ít nhất một quầy");
-      return;
-    }
-
     try {
       if (editingId) {
         await updateCounter(editingId, {
@@ -184,21 +179,27 @@ export default function CounterTable() {
         );
 
         // Đồng bộ danh sách quầy sau khi cập nhật thông tin quầy
-        await addServicesToCounter(editingId, selectedServices);
+        if (selectedServices.length > 0) {
+          await addServicesToCounter(editingId, selectedServices);
+        }
         success("Cập nhật quầy thành công");
         fetchCounters();
         handleCloseModal();
       } else {
+        const serviceIdsPayload =
+          selectedServices.length > 0 ? selectedServices : "";
         const result = await createCounter({
           code: formData.code,
           name: formData.name,
           number: formData.number,
           note: formData.note,
           isActive: formData.isActive,
-          serviceIds: selectedServices,
+          serviceIds: serviceIdsPayload,
         });
         // Thêm services cho counter
-        await addServicesToCounter(result._id, selectedServices);
+        if (selectedServices.length > 0) {
+          await addServicesToCounter(result._id, selectedServices);
+        }
         success("Tạo quầy thành công");
         fetchCounters();
         handleCloseModal();
@@ -344,25 +345,29 @@ export default function CounterTable() {
                   <td>{counter.code}</td>
                   <td>
                     <div className="table-cell-counters">
-                      {counter.services.map((service) => (
-                        <span
-                          key={service._id}
-                          className="table-cell-tag"
-                          style={{
-                            background:
-                              serviceColorMap.get(service._id)?.background ||
-                              "#bfdbfe",
-                            borderLeftColor:
-                              serviceColorMap.get(service._id)?.border ||
-                              "#2563eb",
-                            color:
-                              serviceColorMap.get(service._id)?.color ||
-                              "#1e3a8a",
-                          }}
-                        >
-                          {service.name} ({service.code})
-                        </span>
-                      ))}
+                      {counter.services.length > 0 ? (
+                        counter.services.map((service) => (
+                          <span
+                            key={service._id}
+                            className="table-cell-tag"
+                            style={{
+                              background:
+                                serviceColorMap.get(service._id)?.background ||
+                                "#bfdbfe",
+                              borderLeftColor:
+                                serviceColorMap.get(service._id)?.border ||
+                                "#2563eb",
+                              color:
+                                serviceColorMap.get(service._id)?.color ||
+                                "#1e3a8a",
+                            }}
+                          >
+                            {service.name} ({service.code})
+                          </span>
+                        ))
+                      ) : (
+                        <span className="admin-empty-info">Không có thông tin</span>
+                      )}
                     </div>
                   </td>
                   <td>
@@ -374,7 +379,13 @@ export default function CounterTable() {
                       {counter.isActive ? "Hoạt động" : "Vô hiệu"}
                     </span>
                   </td>
-                  <td>{counter.note}</td>
+                  <td>
+                    {counter.note?.trim() ? (
+                      counter.note
+                    ) : (
+                      <span className="admin-empty-info">Không có thông tin</span>
+                    )}
+                  </td>
                   <td>
                     <div className="table-actions">
                       <button
@@ -425,7 +436,7 @@ export default function CounterTable() {
               className="text-2xl font-bold"
               style={{ marginTop: 0, marginBottom: 20 }}
             >
-              {editingId ? "Chỉnh sửa quầy" : "Thêm Quầy Mới"}
+              {editingId ? "Chỉnh sửa phòng" : "Thêm Phòng Mới"}
             </h3>
 
             <div
@@ -438,7 +449,7 @@ export default function CounterTable() {
               {/* Left Column - Form Fields */}
               <div>
                 <div className="admin-form-group">
-                  <label className="admin-form-label">Mã Quầy:</label>
+                  <label className="admin-form-label">Mã Phòng:</label>
                   <input
                     type="text"
                     className="admin-form-input"

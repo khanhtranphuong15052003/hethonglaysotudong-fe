@@ -8,6 +8,7 @@ import {
   Counter,
   createStaff,
   deleteStaff,
+  getActiveServices,
   getCounters,
   getStaff,
   Staff,
@@ -85,6 +86,7 @@ export default function StaffTable() {
   const [serviceRestrictionConfigured, setServiceRestrictionConfigured] = useState(false);
   const [formAvailableServices, setFormAvailableServices] = useState<StaffServiceInfo[]>([]);
   const [formSelectedServiceIds, setFormSelectedServiceIds] = useState<Set<string>>(new Set());
+  const [activeServiceIds, setActiveServiceIds] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -119,16 +121,32 @@ export default function StaffTable() {
     }
   }, [error, guardSession]);
 
+  const fetchActiveServices = useCallback(async () => {
+    try {
+      const data = await getActiveServices();
+      setActiveServiceIds(new Set(data.map((service) => service._id)));
+    } catch (err) {
+      if (guardSession(err)) return;
+      error("Không thể tải danh sách quầy hoạt động");
+    }
+  }, [error, guardSession]);
+
   useEffect(() => {
     void fetchStaff();
     void fetchCounters();
-  }, [fetchStaff, fetchCounters]);
+    void fetchActiveServices();
+  }, [fetchStaff, fetchCounters, fetchActiveServices]);
 
   const mapCounterServices = (counterId: string | null) => {
     const counterServices =
       counters.find((counter) => counter._id === (counterId || ""))?.services || [];
 
-    return counterServices.map((service) => ({
+    const filteredServices =
+      activeServiceIds.size > 0
+        ? counterServices.filter((service) => activeServiceIds.has(service._id))
+        : counterServices;
+
+    return filteredServices.map((service) => ({
       id: service._id,
       _id: service._id,
       code: service.code,
@@ -141,9 +159,16 @@ export default function StaffTable() {
   const handleOpenModal = (staff?: Staff) => {
     if (staff) {
       const normalizedAvailableServices = mapCounterServices(staff.counterId?._id || null);
+      const availableServiceIds = new Set(
+        normalizedAvailableServices.map((service) => service.id || service._id),
+      );
       const initialSelected =
         staff.serviceRestrictionConfigured && staff.assignedServices
-          ? new Set(staff.assignedServices.map((service) => service.id || service._id))
+          ? new Set(
+              staff.assignedServices
+                .map((service) => service.id || service._id)
+                .filter((id) => availableServiceIds.has(id)),
+            )
           : new Set(normalizedAvailableServices.map((service) => service.id || service._id));
 
       setEditingId(staff._id);
@@ -301,9 +326,16 @@ export default function StaffTable() {
 
     try {
       const normalizedAvailableServices = mapCounterServices(staff.counterId?._id || null);
+      const availableServiceIds = new Set(
+        normalizedAvailableServices.map((service) => service.id || service._id),
+      );
       const initialSelected =
         staff.serviceRestrictionConfigured && staff.assignedServices
-          ? new Set(staff.assignedServices.map((service) => service.id || service._id))
+          ? new Set(
+              staff.assignedServices
+                .map((service) => service.id || service._id)
+                .filter((id) => availableServiceIds.has(id)),
+            )
           : new Set(normalizedAvailableServices.map((service) => service.id || service._id));
 
       setAvailableServices(normalizedAvailableServices);
@@ -510,7 +542,7 @@ export default function StaffTable() {
                   {staff.counterId ? (
                     getCounterDisplay(staff)
                   ) : (
-                    <span style={{ color: "#999" }}>Chưa gán</span>
+                    <span className="admin-empty-info">Không có thông tin</span>
                   )}
                 </td>
                 <td>
@@ -541,9 +573,7 @@ export default function StaffTable() {
                       ))}
                     </div>
                   ) : staff.serviceRestrictionConfigured ? (
-                    <span style={{ color: "#dc3545", fontSize: "0.9em" }}>
-                      Không có quầy
-                    </span>
+                    <span className="admin-empty-info">Không có thông tin</span>
                   ) : (
                     <span style={{ color: "#999", fontStyle: "italic", fontSize: "0.9em" }}>
                       Chưa cấu hình
@@ -562,7 +592,7 @@ export default function StaffTable() {
                 <td>
                   {staff.lastLoginAt
                     ? new Date(staff.lastLoginAt).toLocaleString("vi-VN")
-                    : "Chưa đăng nhập"}
+                    : <span className="admin-empty-info">Không có thông tin</span>}
                 </td>
                 <td>
                   <div className="table-actions">
@@ -798,7 +828,7 @@ export default function StaffTable() {
                 </p>
 
                 {availableServices.length === 0 ? (
-                  <p style={{ color: "#999", fontStyle: "italic" }}>Phòng không có quầy nào.</p>
+                  <p className="admin-empty-info">Không có thông tin</p>
                 ) : (
                   <div
                     style={{
