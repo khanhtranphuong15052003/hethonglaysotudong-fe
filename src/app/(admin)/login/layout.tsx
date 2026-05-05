@@ -14,16 +14,21 @@ export default function AdminLoginLayout({
         flexDirection: "column",
         flex: 1,
         width: "100%",
+        minHeight: "100vh",
+        background: "#f5f7fb",
+        backgroundImage: "url(/assets/background.png)",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
       }}
     >
       <div
         style={{
           flex: 1,
-          minHeight: "calc(100vh - 140px)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: "clamp(24px, 4vh, 48px) 20px",
+          padding: "clamp(24px, 4vh, 48px) 16px",
           boxSizing: "border-box",
         }}
       >

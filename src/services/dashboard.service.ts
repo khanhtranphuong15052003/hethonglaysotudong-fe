@@ -2,6 +2,7 @@
 
 import {
   ADMIN_AUTH_EXPIRED_ERROR,
+  isAuthExpiredMessage,
 } from "@/lib/admin-auth";
 import { getPublicApiBase } from "@/lib/runtime-config";
 
@@ -174,6 +175,122 @@ export interface DashboardReportData {
   timeline: DashboardReportTimelinePoint[];
 }
 
+export interface DashboardTicketOverview {
+  totalTickets: number;
+  statusCounts: {
+    waiting: number;
+    processing: number;
+    completed: number;
+    skipped: number;
+  };
+  serviceCounts: Array<{
+    serviceId: string;
+    serviceName: string;
+    count: number;
+  }>;
+}
+
+export interface DashboardCountersStatus {
+  totalCounters: number;
+  activeCounters: number;
+  inactiveCounters: number;
+  countersList: Array<{
+    id?: string;
+    code?: string;
+    name?: string;
+    number?: number;
+    isActive?: boolean;
+  }>;
+}
+
+export interface DashboardStaffData {
+  totalStaff: number;
+  onDutyStaff?: unknown[];
+  offDutyStaff?: unknown[];
+  staffList: Array<{
+    id?: string;
+    fullName: string;
+    username?: string;
+    isActive?: boolean;
+    onDuty?: boolean;
+    counterId?: {
+      id?: string;
+      name?: string;
+      number?: number;
+    } | null;
+  }>;
+}
+
+export interface DashboardTicketsToday {
+  totalToday: number;
+  statusCounts: {
+    completed: number;
+    skipped: number;
+    waiting: number;
+    processing: number;
+  };
+  percentages?: {
+    completed: number;
+    skipped: number;
+    waiting: number;
+    processing: number;
+  };
+}
+
+export interface DashboardRecentTickets {
+  recentByCounter: Array<{
+    counterId: string | { id?: string; name?: string; number?: number } | null;
+    tickets: Array<{
+      number: number;
+      ticketNumber: string;
+      status: string;
+      createdAt: string;
+      serviceId?: { name?: string; code?: string } | null;
+      staffId?: { fullName?: string } | null;
+    }>;
+  }>;
+  recentByService: Array<{
+    serviceId: string | { id?: string; name?: string; code?: string } | null;
+    tickets: Array<{
+      number: number;
+      ticketNumber: string;
+      status: string;
+      createdAt: string;
+      serviceId?: { name?: string; code?: string } | null;
+      staffId?: { fullName?: string } | null;
+    }>;
+  }>;
+}
+
+export interface DashboardTicketRatio {
+  counterId: string;
+  counterName: string;
+  total: number;
+  completed: number;
+  skipped: number;
+  waiting: number;
+  percentages?: {
+    completed: number;
+    skipped: number;
+    waiting: number;
+  };
+}
+
+export interface DashboardTicketTrendPoint {
+  label: string;
+  completed: number;
+  skipped: number;
+  waiting: number;
+  total: number;
+}
+
+export interface DashboardCounterAlert {
+  counterId: string;
+  counterName: string;
+  waitingCount: number;
+  isAlert: boolean;
+}
+
 const ensureApiBase = () => {
   if (!API_BASE) {
     throw new Error(
@@ -182,6 +299,23 @@ const ensureApiBase = () => {
   }
 
   return API_BASE;
+};
+
+const requestDashboard = async <T,>(path: string): Promise<T> => {
+  const response = await fetch(`${ensureApiBase()}${path}`, {
+    headers: getAuthHeaders(),
+    cache: "no-store",
+  });
+
+  const data = await response.json();
+  if (response.status === 401 || isAuthExpiredMessage(data?.message)) {
+    throw new Error(DASHBOARD_AUTH_EXPIRED_ERROR);
+  }
+  if (!data.success) {
+    throw new Error(data.message || "Khong the tai du lieu thong ke");
+  }
+
+  return data.data as T;
 };
 
 export async function getDashboardOverview(): Promise<DashboardOverviewData> {
@@ -254,3 +388,29 @@ export async function getDashboardReport(params: {
 
   return data.data as DashboardReportData;
 }
+
+export const getDashboardTicketOverview = () =>
+  requestDashboard<DashboardTicketOverview>("/dashboard/tickets/overview");
+
+export const getDashboardCountersStatus = () =>
+  requestDashboard<DashboardCountersStatus>("/dashboard/counters/status");
+
+export const getDashboardStaff = () =>
+  requestDashboard<DashboardStaffData>("/dashboard/staff");
+
+export const getDashboardTicketsToday = () =>
+  requestDashboard<DashboardTicketsToday>("/dashboard/tickets/today");
+
+export const getDashboardRecentTickets = () =>
+  requestDashboard<DashboardRecentTickets>("/dashboard/tickets/recent");
+
+export const getDashboardTicketRatio = () =>
+  requestDashboard<DashboardTicketRatio[]>("/dashboard/tickets/ratio");
+
+export const getDashboardTicketTrend = (groupBy: "day" | "month" | "year") =>
+  requestDashboard<DashboardTicketTrendPoint[]>(
+    `/dashboard/tickets/trend?groupBy=${groupBy}`,
+  );
+
+export const getDashboardCounterAlert = () =>
+  requestDashboard<DashboardCounterAlert[]>("/dashboard/counters/alert");

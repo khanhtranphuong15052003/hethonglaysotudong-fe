@@ -182,7 +182,7 @@ export default function CounterTable() {
         if (selectedServices.length > 0) {
           await addServicesToCounter(editingId, selectedServices);
         }
-        success("Cập nhật quầy thành công");
+        success("Cập nhật phòng thành công");
         fetchCounters();
         handleCloseModal();
       } else {

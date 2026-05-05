@@ -420,19 +420,7 @@ export default function SettingsPage() {
             </button>
           </div>
 
-          <div
-            style={{
-              marginTop: "16px",
-              fontSize: "13px",
-              color: "#6b7280",
-            }}
-          >
-            {loading
-              ? "Đang tải cấu hình auto reset..."
-              : savingAutoReset
-                ? "Đang cập nhật auto reset..."
-                : "Giờ reset dùng định dạng 24h HH:MM và backend sẽ kiểm tra theo phút."}
-          </div>
+          
         </div>
       </div>
     </div>
