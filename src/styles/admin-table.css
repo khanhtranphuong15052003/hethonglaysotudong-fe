@@ -575,6 +575,12 @@ table.admin-table td {
   font-weight: 600;
 }
 
+.admin-tag-count {
+  color: #8a94a6;
+  font-weight: 600;
+  font-size: 12px;
+}
+
 .admin-table-footer {
   padding: 12px 20px; /* Reduced padding */
   background: #f8f9fa;

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -72,16 +72,32 @@ export default function CounterDisplayPage() {
   const [error, setError] = useState<string | null>(null);
 
   const applySnapshot = (snapshot: StaffDisplaySnapshot) => {
-    setData({
-      counter: snapshot.counter,
-      services: snapshot.services,
-      currentTicket: snapshot.currentTicket,
-      processingTickets: snapshot.processingTickets as Ticket[],
-      waitingTickets: snapshot.waitingTickets as unknown as Ticket[],
-      totalWaiting: snapshot.totalWaiting,
+    setData(prev => {
+      if (!prev) {
+        return {
+          ...snapshot,
+          processingTickets: snapshot.processingTickets || [],
+        };
+      }
+
+      // 🔥 merge processingTickets đúng cách
+      const mergedProcessing = [
+        ...(prev.processingTickets || []),
+        ...(snapshot.processingTickets || []),
+      ];
+
+      // remove duplicate theo id
+      const uniqueProcessing = Array.from(
+        new Map(mergedProcessing.map(t => [t.id, t])).values()
+      );
+
+      return {
+        ...prev,
+        ...snapshot,
+        processingTickets: uniqueProcessing,
+      };
     });
   };
-
   const resolveCounterId = useCallback(async (identifier: string) => {
     const normalizedIdentifier = identifier.trim();
 
@@ -224,13 +240,21 @@ export default function CounterDisplayPage() {
   }
 
   const allTickets: Ticket[] = [];
-  if (data.processingTickets && data.processingTickets.length > 0) {
-    allTickets.push(...data.processingTickets);
-  } else if (data.currentTicket) {
+
+  if (data.currentTicket) {
     allTickets.push(data.currentTicket);
   }
+
+  if (data.processingTickets) {
+    allTickets.push(...data.processingTickets);
+  }
+
   allTickets.push(...data.waitingTickets);
-  const displayTickets = allTickets.slice(0, 5);
+
+  const uniqueTickets = Array.from(
+    new Map(allTickets.map((ticket) => [ticket.id, ticket])).values(),
+  );
+  const displayTickets = uniqueTickets.slice(0, 5);
 
   return (
     <div
@@ -259,106 +283,106 @@ export default function CounterDisplayPage() {
             color: "#003366",
           }}
         >
-      <div
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,249,240,0.98) 100%)",
-          padding: "clamp(8px, 1vh, 14px) clamp(18px, 2.4vw, 34px)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          borderBottom: "3px solid #003366",
-          minHeight: TOP_HEADER_HEIGHT,
-          flexShrink: 0,
-          gap: "clamp(8px, 1vw, 14px)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "clamp(8px, 1vw, 14px)",
-            minWidth: 0,
-            flex: "1 1 auto",
-          }}
-        >
-          <img
-            src="/assets/logotoaan.png"
-            alt="Logo"
-            style={{
-              height: "clamp(46px, 5vw, 68px)",
-              maxHeight: "clamp(40px, 4.5vw, 60px)",
-              width: "auto",
-              flexShrink: 0,
-            }}
-          />
-
           <div
             style={{
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,249,240,0.98) 100%)",
+              padding: "clamp(8px, 1vh, 14px) clamp(18px, 2.4vw, 34px)",
               display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-              justifyContent: "center",
-              textAlign: "left",
-              minWidth: 0,
+              alignItems: "center",
+              justifyContent: "space-between",
+              borderBottom: "3px solid #003366",
+              minHeight: TOP_HEADER_HEIGHT,
+              flexShrink: 0,
+              gap: "clamp(8px, 1vw, 14px)",
             }}
           >
-              <div style={{ textAlign: 'left' }}>
-                <div
-                  style={{
-                    margin: 0,
-                    fontSize: "clamp(16px, 2vw, 26px)",
-                    fontWeight: 900,
-                    lineHeight: 1.2,
-                    letterSpacing: "0.5px",
-                    textTransform: "uppercase",
-                    color: "#111111",
-                  }}
-                >
-                  TÒA ÁN
-                </div>
-                <div
-                  style={{
-                    margin: 0,
-                    fontSize: "clamp(16px, 2vw, 26px)",
-                    fontWeight: 800,
-                    lineHeight: 1.1,
-                    letterSpacing: "0.2px",
-                    textTransform: "uppercase",
-                    color: "#111111",
-                  }}
-                >
-                  NHÂN DÂN KHU VỰC 1
-                </div>
-              </div>
             <div
               style={{
-                marginTop: "clamp(1px, 0.25vh, 4px)",
-                fontSize: "clamp(13px, 1.3vw, 18px)",
-                fontWeight: 500,
-                lineHeight: 1.1,
-                letterSpacing: "0px",
-                color: "#6c6c6c",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-start",
+                gap: "clamp(8px, 1vw, 14px)",
+                minWidth: 0,
+                flex: "1 1 auto",
               }}
             >
-              Thành Phố Hồ Chí Minh
-            </div>
-          </div>
-        </div>
+              <img
+                src="/assets/logotoaan.png"
+                alt="Logo"
+                style={{
+                  height: "clamp(46px, 5vw, 68px)",
+                  maxHeight: "clamp(40px, 4.5vw, 60px)",
+                  width: "auto",
+                  flexShrink: 0,
+                }}
+              />
 
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-end",
-            justifyContent: "center",
-            textAlign: "right",
-            gap: "clamp(4px, 0.6vh, 8px)",
-            flexShrink: 0,
-          }}
-        >
-          {/* <h2
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  justifyContent: "center",
+                  textAlign: "left",
+                  minWidth: 0,
+                }}
+              >
+                <div style={{ textAlign: 'left' }}>
+                  <div
+                    style={{
+                      margin: 0,
+                      fontSize: "clamp(16px, 2vw, 26px)",
+                      fontWeight: 900,
+                      lineHeight: 1.2,
+                      letterSpacing: "0.5px",
+                      textTransform: "uppercase",
+                      color: "#111111",
+                    }}
+                  >
+                    TÒA ÁN
+                  </div>
+                  <div
+                    style={{
+                      margin: 0,
+                      fontSize: "clamp(16px, 2vw, 26px)",
+                      fontWeight: 800,
+                      lineHeight: 1.1,
+                      letterSpacing: "0.2px",
+                      textTransform: "uppercase",
+                      color: "#111111",
+                    }}
+                  >
+                    NHÂN DÂN KHU VỰC 1
+                  </div>
+                </div>
+                <div
+                  style={{
+                    marginTop: "clamp(1px, 0.25vh, 4px)",
+                    fontSize: "clamp(13px, 1.3vw, 18px)",
+                    fontWeight: 500,
+                    lineHeight: 1.1,
+                    letterSpacing: "0px",
+                    color: "#6c6c6c",
+                  }}
+                >
+                  Thành Phố Hồ Chí Minh
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-end",
+                justifyContent: "center",
+                textAlign: "right",
+                gap: "clamp(4px, 0.6vh, 8px)",
+                flexShrink: 0,
+              }}
+            >
+              {/* <h2
             style={{
               margin: 0,
               fontSize: "clamp(18px, 2.2vw, 32px)",
@@ -371,366 +395,366 @@ export default function CounterDisplayPage() {
           >
             Danh Sách Chờ Xử Lý
           </h2> */}
-          <div
-            style={{
-              fontSize: "clamp(18px, 2vw, 28px)",
-              fontWeight: 800,
-              color: "#003366",
-              letterSpacing: "0.3px",
-              textTransform: "uppercase",
-              lineHeight: 1.1,
-              background: "linear-gradient(180deg, #ffd86d 0%, #ffc233 100%)",
-              borderRadius: 999,
-              padding: "clamp(4px, 0.4vh, 7px) clamp(18px, 1.8vw, 28px)",
-              boxShadow: "0 6px 16px rgba(0, 0, 0, 0.12)",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "fit-content",
-              minWidth: 0,
-              maxWidth: "42vw",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {data.counter.name}
+              <div
+                style={{
+                  fontSize: "clamp(18px, 2vw, 28px)",
+                  fontWeight: 800,
+                  color: "#003366",
+                  letterSpacing: "0.3px",
+                  textTransform: "uppercase",
+                  lineHeight: 1.1,
+                  background: "linear-gradient(180deg, #ffd86d 0%, #ffc233 100%)",
+                  borderRadius: 999,
+                  padding: "clamp(4px, 0.4vh, 7px) clamp(18px, 1.8vw, 28px)",
+                  boxShadow: "0 6px 16px rgba(0, 0, 0, 0.12)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "fit-content",
+                  minWidth: 0,
+                  maxWidth: "42vw",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {data.counter.name}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      <div
-        style={{
-          flex: 1,
-          overflow: "hidden",
-          background: "white",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "28% 50% 22%",
-            background: "#003366",
-            color: "white",
-            flexShrink: 0,
-          }}
-        >
           <div
             style={{
-              padding: "clamp(10px, 1vh, 14px) clamp(10px, 1.2vw, 18px)",
-              textAlign: "center",
-              fontWeight: 800,
-              fontSize: "clamp(24px, 2.8vw, 38px)",
-              letterSpacing: "0.5px",
-              borderRight: "2px solid rgba(255, 255, 255, 0.28)",
-             
-              minHeight: TABLE_HEADER_HEIGHT,
-paddingTop: "clamp(12px, 1.2vh, 18px)",
-paddingBottom: "clamp(12px, 1.2vh, 18px)",
-              lineHeight: 1.45,
-              whiteSpace: "normal",
-              wordBreak: "break-word",
-              overflowWrap: "anywhere",
-              textTransform: "uppercase",
+              flex: 1,
+              overflow: "hidden",
+              background: "white",
               display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              flexDirection: "column",
             }}
           >
-            Yêu Cầu
-          </div>
-          <div
-            style={{
-              padding: "clamp(10px, 1vh, 14px) clamp(10px, 1.2vw, 18px)",
-              textAlign: "center",
-              fontWeight: 800,
-              fontSize: "clamp(24px, 2.8vw, 38px)",
-              letterSpacing: "0.5px",
-              borderRight: "2px solid rgba(255, 255, 255, 0.28)",
-              height: TABLE_HEADER_HEIGHT,
-              lineHeight: 1.12,
-              whiteSpace: "normal",
-              wordBreak: "break-word",
-              overflowWrap: "anywhere",
-              textTransform: "uppercase",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            Thông Tin
-          </div>
-          <div
-            style={{
-              padding: "clamp(10px, 1vh, 14px) clamp(10px, 1.2vw, 18px)",
-              textAlign: "center",
-              fontWeight: 800,
-              fontSize: "clamp(22px, 2.5vw, 34px)",
-              letterSpacing: "0.5px",
-              height: TABLE_HEADER_HEIGHT,
-              lineHeight: 1.12,
-              whiteSpace: "normal",
-              wordBreak: "break-word",
-              overflowWrap: "anywhere",
-              textTransform: "uppercase",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            Trạng Thái
-          </div>
-        </div>
-
-<div
-  style={{
-    flex: 1,
-    display: "grid",
-    gridTemplateRows: "repeat(5, 1fr)", // 👈 CHIA ĐỀU 5 HÀNG
-    overflow: "hidden",
-    background: "white",
-  }}
->
-          {displayTickets.length > 0 ? (
-            displayTickets.map((ticket, index) => {
-              const isEvenRow = (index + 1) % 2 === 0;
-              const isProcessing = ticket.status === "processing";
-              const bgColor = isEvenRow ? "#0a3d78" : "#ffffff";
-              const textColor = isEvenRow ? "#ffffff" : "#003366";
-              const statusDisplay =
-                isProcessing
-                  ? "Đang xử lý"
-                  : ticket.status === "completed"
-                    ? "Hoàn thành"
-                    : "Vui lòng chờ";
-              const statusColor =
-                isProcessing
-                  ? "#4dd06d"
-                  : ticket.status === "completed"
-                    ? "#ff6b6b"
-                    : "#ffb347";
-
-              return (
-                <div
-                  key={ticket.id}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "28% 50% 22%",
-                    background: isProcessing
-                      ? isEvenRow
-                        ? "linear-gradient(180deg, #164b87 0%, #0a3d78 100%)"
-                        : "linear-gradient(180deg, #ffffff 0%, #f3fbf5 100%)"
-                      : bgColor,
-                    borderBottom:
-                      index === displayTickets.length - 1
-                        ? "none"
-                        : "2px solid #d8e0ea",
-                    // height: TABLE_ROW_HEIGHT,
-                    // minHeight: TABLE_ROW_HEIGHT,
-                    // maxHeight: TABLE_ROW_HEIGHT,
-                    boxSizing: "border-box",
-                    boxShadow: isProcessing
-                      ? "inset 0 0 0 3px rgba(77, 208, 109, 0.85)"
-                      : "none",
-                    animation: isProcessing
-                      ? "processingRowPulse 1.8s ease-in-out infinite"
-                      : "none",
-                    // flex: "0 0 auto",
-                  }}
-                >
-                  <div
-                    style={{
-                      padding: "clamp(8px, 0.8vh, 12px) clamp(8px, 1vw, 16px)",
-                      textAlign: "center",
-                      fontWeight: 800,
-                      color: textColor,
-                      fontSize: "clamp(30px, 3vw, 46px)",
-                      borderRight: "1px solid rgba(0, 0, 0, 0.12)",
-                      overflow: "hidden",
-                      height: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: "100%",
-                        height: "100%",
-                        textAlign: "center",
-                        whiteSpace: "normal",
-                        wordBreak: "break-word",
-                        overflowWrap: "anywhere",
-                        lineHeight: 1.15,
-                        maxHeight: "100%",
-                        overflow: "hidden",
-                      }}
-                    >
-                      {formatServiceName(ticket.serviceName)}
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      padding: "clamp(8px, 0.8vh, 12px) clamp(8px, 1vw, 16px)",
-                      textAlign: "center",
-                      color: textColor,
-                      fontSize: "clamp(22px, 2.2vw, 34px)",
-                      borderRight: "1px solid rgba(0, 0, 0, 0.12)",
-                      overflow: "hidden",
-                      height: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: "100%",
-                        height: "100%",
-                        gap: "clamp(6px, 0.65vh, 10px)",
-                        overflow: "hidden",
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: "clamp(56px, 5.8vw, 88px)",
-                          fontWeight: 800,
-                          letterSpacing: "1px",
-                          lineHeight: 0.96,
-                          color: textColor,
-                        }}
-                      >
-                        {getTicketDisplayNumber(ticket)}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "clamp(24px, 2.35vw, 36px)",
-                          fontWeight: 700,
-                          lineHeight: 1.05,
-                          maxWidth: "100%",
-                          whiteSpace: "normal",
-                          wordBreak: "break-word",
-                          overflowWrap: "anywhere",
-                        }}
-                      >
-                        {formatDisplayStaffName(ticket.customerName)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      padding: "clamp(8px, 0.8vh, 12px) clamp(8px, 1vw, 16px)",
-                      textAlign: "center",
-                      color: textColor,
-                      fontSize: "clamp(22px, 2.2vw, 34px)",
-                      overflow: "hidden",
-                      height: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <span
-                      style={{
-                        color: statusColor,
-                        padding:
-                          "clamp(4px, 0.45vh, 8px) clamp(8px, 0.9vw, 12px)",
-                        borderRadius: 999,
-                        fontWeight: 900,
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        minWidth: 0,
-                        maxWidth: "100%",
-                        fontSize: "clamp(28px, 2.5vw, 40px)",
-                        whiteSpace: "normal",
-                        wordBreak: "break-word",
-                        overflowWrap: "anywhere",
-                        lineHeight: 1.02,
-                        textAlign: "center",
-                        background: isProcessing
-                          ? "rgba(77, 208, 109, 0.14)"
-                          : "transparent",
-                        boxShadow: isProcessing
-                          ? "0 0 18px rgba(77, 208, 109, 0.18)"
-                          : "none",
-                      }}
-                    >
-                      {statusDisplay}
-                    </span>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
             <div
               style={{
-                padding: "40px 24px",
-                textAlign: "center",
-                color: "#999",
-                fontSize: 26,
+                display: "grid",
+                gridTemplateColumns: "28% 50% 22%",
+                background: "#003366",
+                color: "white",
+                flexShrink: 0,
               }}
             >
-              Chưa có đương sự nào chờ xử lý
+              <div
+                style={{
+                  padding: "clamp(10px, 1vh, 14px) clamp(10px, 1.2vw, 18px)",
+                  textAlign: "center",
+                  fontWeight: 800,
+                  fontSize: "clamp(24px, 2.8vw, 38px)",
+                  letterSpacing: "0.5px",
+                  borderRight: "2px solid rgba(255, 255, 255, 0.28)",
+
+                  minHeight: TABLE_HEADER_HEIGHT,
+                  paddingTop: "clamp(12px, 1.2vh, 18px)",
+                  paddingBottom: "clamp(12px, 1.2vh, 18px)",
+                  lineHeight: 1.45,
+                  whiteSpace: "normal",
+                  wordBreak: "break-word",
+                  overflowWrap: "anywhere",
+                  textTransform: "uppercase",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                Yêu Cầu
+              </div>
+              <div
+                style={{
+                  padding: "clamp(10px, 1vh, 14px) clamp(10px, 1.2vw, 18px)",
+                  textAlign: "center",
+                  fontWeight: 800,
+                  fontSize: "clamp(24px, 2.8vw, 38px)",
+                  letterSpacing: "0.5px",
+                  borderRight: "2px solid rgba(255, 255, 255, 0.28)",
+                  height: TABLE_HEADER_HEIGHT,
+                  lineHeight: 1.12,
+                  whiteSpace: "normal",
+                  wordBreak: "break-word",
+                  overflowWrap: "anywhere",
+                  textTransform: "uppercase",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                Thông Tin
+              </div>
+              <div
+                style={{
+                  padding: "clamp(10px, 1vh, 14px) clamp(10px, 1.2vw, 18px)",
+                  textAlign: "center",
+                  fontWeight: 800,
+                  fontSize: "clamp(22px, 2.5vw, 34px)",
+                  letterSpacing: "0.5px",
+                  height: TABLE_HEADER_HEIGHT,
+                  lineHeight: 1.12,
+                  whiteSpace: "normal",
+                  wordBreak: "break-word",
+                  overflowWrap: "anywhere",
+                  textTransform: "uppercase",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                Trạng Thái
+              </div>
             </div>
-          )}
-        </div>
-      </div>
 
-      <div
-        style={{
-          // background: "linear-gradient(180deg, #e6eef9 0%, #d8e7fb 100%)",
-          padding: "clamp(6px, 0.8vh, 10px) clamp(16px, 2vw, 28px)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderTop: "3px solid #003366",
-          minHeight: INFO_BAR_HEIGHT,
-          flexShrink: 0,
-          textAlign: "center",
-          background:"red",
-        }}
-      >
-<div
-  style={{
-    fontSize: "clamp(20px, 2.2vw, 30px)",
-    fontWeight: 800,
-    color: "white",
-    letterSpacing: "0.5px",
-    textTransform: "uppercase",
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-  }}
->
-  <span>Còn</span>
+            <div
+              style={{
+                flex: 1,
+                display: "grid",
+                gridTemplateRows: "repeat(5, 1fr)", // 👈 CHIA ĐỀU 5 HÀNG
+                overflow: "hidden",
+                background: "white",
+              }}
+            >
+              {displayTickets.length > 0 ? (
+                displayTickets.map((ticket, index) => {
+                  const isEvenRow = (index + 1) % 2 === 0;
+                  const isProcessing = ticket.status === "processing";
+                  const bgColor = isEvenRow ? "#0a3d78" : "#ffffff";
+                  const textColor = isEvenRow ? "#ffffff" : "#003366";
+                  const statusDisplay =
+                    isProcessing
+                      ? "Đang xử lý"
+                      : ticket.status === "completed"
+                        ? "Hoàn thành"
+                        : "Vui lòng chờ";
+                  const statusColor =
+                    isProcessing
+                      ? "#4dd06d"
+                      : ticket.status === "completed"
+                        ? "#ff6b6b"
+                        : "#ffb347";
 
-  <span
-    style={{
-      display: "inline-block",
-      fontSize: "clamp(30px, 3.2vw, 42px)",
-      fontWeight: 900,
-      color: "#ffd86d",
-      animation: "pulseScale 1.2s ease-in-out infinite",
-    }}
-  >
-    {data.totalWaiting}
-  </span>
+                  return (
+                    <div
+                      key={ticket.id}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "28% 50% 22%",
+                        background: isProcessing
+                          ? isEvenRow
+                            ? "linear-gradient(180deg, #164b87 0%, #0a3d78 100%)"
+                            : "linear-gradient(180deg, #ffffff 0%, #f3fbf5 100%)"
+                          : bgColor,
+                        borderBottom:
+                          index === displayTickets.length - 1
+                            ? "none"
+                            : "2px solid #d8e0ea",
+                        // height: TABLE_ROW_HEIGHT,
+                        // minHeight: TABLE_ROW_HEIGHT,
+                        // maxHeight: TABLE_ROW_HEIGHT,
+                        boxSizing: "border-box",
+                        boxShadow: isProcessing
+                          ? "inset 0 0 0 3px rgba(77, 208, 109, 0.85)"
+                          : "none",
+                        animation: isProcessing
+                          ? "processingRowPulse 1.8s ease-in-out infinite"
+                          : "none",
+                        // flex: "0 0 auto",
+                      }}
+                    >
+                      <div
+                        style={{
+                          padding: "clamp(8px, 0.8vh, 12px) clamp(8px, 1vw, 16px)",
+                          textAlign: "center",
+                          fontWeight: 900,
+                          color: textColor,
+                          fontSize: "clamp(30px, 3vw, 46px)",
+                          borderRight: "1px solid rgba(0, 0, 0, 0.12)",
+                          overflow: "hidden",
+                          height: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: "100%",
+                            height: "100%",
+                            textAlign: "center",
+                            whiteSpace: "normal",
+                            wordBreak: "break-word",
+                            overflowWrap: "anywhere",
+                            lineHeight: 1.15,
+                            maxHeight: "100%",
+                            overflow: "hidden",
+                          }}
+                        >
+                          {formatServiceName(ticket.serviceName)}
+                        </div>
+                      </div>
 
-  <span>đương sự chờ xử lý</span>
-</div>
-      </div>
+                      <div
+                        style={{
+                          padding: "clamp(8px, 0.8vh, 12px) clamp(8px, 1vw, 16px)",
+                          textAlign: "center",
+                          color: textColor,
+                          fontSize: "clamp(32px, 3.5vw, 56px)",
+                          borderRight: "1px solid rgba(0, 0, 0, 0.12)",
+                          overflow: "hidden",
+                          height: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: "100%",
+                            height: "100%",
+                            gap: "clamp(6px, 0.65vh, 10px)",
+                            overflow: "hidden",
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: "clamp(84px, 9vw, 140px)",
+                              fontWeight: 900,
+                              letterSpacing: "1px",
+                              lineHeight: 0.96,
+                              color: textColor,
+                            }}
+                          >
+                            {getTicketDisplayNumber(ticket)}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: "clamp(24px, 2.35vw, 36px)",
+                              fontWeight: 700,
+                              lineHeight: 1.05,
+                              maxWidth: "100%",
+                              whiteSpace: "normal",
+                              wordBreak: "break-word",
+                              overflowWrap: "anywhere",
+                            }}
+                          >
+                            {formatDisplayStaffName(ticket.customerName)}
+                          </div>
+                        </div>
+                      </div>
 
-      <style>{`
+                      <div
+                        style={{
+                          padding: "clamp(8px, 0.8vh, 12px) clamp(8px, 1vw, 16px)",
+                          textAlign: "center",
+                          color: textColor,
+                          fontSize: "clamp(22px, 2.2vw, 34px)",
+                          overflow: "hidden",
+                          height: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <span
+                          style={{
+                            color: statusColor,
+                            padding:
+                              "clamp(4px, 0.45vh, 8px) clamp(8px, 0.9vw, 12px)",
+                            borderRadius: 999,
+                            fontWeight: 900,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            minWidth: 0,
+                            maxWidth: "100%",
+                            fontSize: "clamp(28px, 2.5vw, 40px)",
+                            whiteSpace: "normal",
+                            wordBreak: "break-word",
+                            overflowWrap: "anywhere",
+                            lineHeight: 1.02,
+                            textAlign: "center",
+                            background: isProcessing
+                              ? "rgba(77, 208, 109, 0.14)"
+                              : "transparent",
+                            boxShadow: isProcessing
+                              ? "0 0 18px rgba(77, 208, 109, 0.18)"
+                              : "none",
+                          }}
+                        >
+                          {statusDisplay}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div
+                  style={{
+                    padding: "40px 24px",
+                    textAlign: "center",
+                    color: "#999",
+                    fontSize: 26,
+                  }}
+                >
+                  Chưa có đương sự nào chờ xử lý
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div
+            style={{
+              // background: "linear-gradient(180deg, #e6eef9 0%, #d8e7fb 100%)",
+              padding: "clamp(6px, 0.8vh, 10px) clamp(16px, 2vw, 28px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderTop: "3px solid #003366",
+              minHeight: INFO_BAR_HEIGHT,
+              flexShrink: 0,
+              textAlign: "center",
+              background: "red",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "clamp(20px, 2.2vw, 30px)",
+                fontWeight: 800,
+                color: "white",
+                letterSpacing: "0.5px",
+                textTransform: "uppercase",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+              }}
+            >
+              <span>Còn</span>
+
+              <span
+                style={{
+                  display: "inline-block",
+                  fontSize: "clamp(30px, 3.2vw, 42px)",
+                  fontWeight: 900,
+                  color: "#ffd86d",
+                  animation: "pulseScale 1.2s ease-in-out infinite",
+                }}
+              >
+                {data.totalWaiting}
+              </span>
+
+              <span>đương sự chờ xử lý</span>
+            </div>
+          </div>
+
+          <style>{`
         .displayPortraitStage {
           position: relative;
           width: 100%;

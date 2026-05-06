@@ -219,7 +219,7 @@ const getCardBackground = (index: number) => {
               flexShrink: 0,
             }}
           >
-            Thời gian làm việc từ Thứ 2 đến Thứ 6 hằng tuần - sáng từ 8 giờ 00 phút đến 16 giờ 30 phút.
+            Thời gian làm việc từ thứ 2 đến thứ 6 hằng tuần - Sáng từ 8 giờ đến 12 giờ - Chiều từ 13 giờ 30 phút đến 16 giờ 30 phút.
           </p>
         </div>
       )}

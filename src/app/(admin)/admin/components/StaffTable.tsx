@@ -8,7 +8,6 @@ import {
   Counter,
   createStaff,
   deleteStaff,
-  getActiveServices,
   getCounters,
   getStaff,
   Staff,
@@ -34,8 +33,6 @@ type ApiErrorShape = {
   };
   message?: string;
 };
-
-type CounterServiceOption = Counter["services"][number];
 
 const parseApiError = (err: unknown): string => {
   const apiError = err as ApiErrorShape;
@@ -73,8 +70,6 @@ export default function StaffTable() {
   const [filterStatuses, setFilterStatuses] = useState<string[]>(["all"]);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [showStatusConfirm, setShowStatusConfirm] = useState(false);
-  const [pendingStatusChange, setPendingStatusChange] = useState<boolean | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [showServiceModal, setShowServiceModal] = useState(false);
@@ -86,7 +81,6 @@ export default function StaffTable() {
   const [serviceRestrictionConfigured, setServiceRestrictionConfigured] = useState(false);
   const [formAvailableServices, setFormAvailableServices] = useState<StaffServiceInfo[]>([]);
   const [formSelectedServiceIds, setFormSelectedServiceIds] = useState<Set<string>>(new Set());
-  const [activeServiceIds, setActiveServiceIds] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -121,32 +115,16 @@ export default function StaffTable() {
     }
   }, [error, guardSession]);
 
-  const fetchActiveServices = useCallback(async () => {
-    try {
-      const data = await getActiveServices();
-      setActiveServiceIds(new Set(data.map((service) => service._id)));
-    } catch (err) {
-      if (guardSession(err)) return;
-      error("Không thể tải danh sách quầy hoạt động");
-    }
-  }, [error, guardSession]);
-
   useEffect(() => {
     void fetchStaff();
     void fetchCounters();
-    void fetchActiveServices();
-  }, [fetchStaff, fetchCounters, fetchActiveServices]);
+  }, [fetchStaff, fetchCounters]);
 
   const mapCounterServices = (counterId: string | null) => {
     const counterServices =
       counters.find((counter) => counter._id === (counterId || ""))?.services || [];
 
-    const filteredServices =
-      activeServiceIds.size > 0
-        ? counterServices.filter((service) => activeServiceIds.has(service._id))
-        : counterServices;
-
-    return filteredServices.map((service) => ({
+    return counterServices.map((service) => ({
       id: service._id,
       _id: service._id,
       code: service.code,
@@ -159,16 +137,9 @@ export default function StaffTable() {
   const handleOpenModal = (staff?: Staff) => {
     if (staff) {
       const normalizedAvailableServices = mapCounterServices(staff.counterId?._id || null);
-      const availableServiceIds = new Set(
-        normalizedAvailableServices.map((service) => service.id || service._id),
-      );
       const initialSelected =
         staff.serviceRestrictionConfigured && staff.assignedServices
-          ? new Set(
-              staff.assignedServices
-                .map((service) => service.id || service._id)
-                .filter((id) => availableServiceIds.has(id)),
-            )
+          ? new Set(staff.assignedServices.map((service) => service.id || service._id))
           : new Set(normalizedAvailableServices.map((service) => service.id || service._id));
 
       setEditingId(staff._id);
@@ -207,22 +178,6 @@ export default function StaffTable() {
   const handleDelete = (staffId: string) => {
     setPendingDeleteId(staffId);
     setShowDeleteConfirm(true);
-  };
-
-  const handleStatusChange = (nextStatus: boolean) => {
-    setPendingStatusChange(nextStatus);
-    setShowStatusConfirm(true);
-  };
-
-  const handleConfirmStatus = () => {
-    if (pendingStatusChange !== null) {
-      setFormData((prev) => ({
-        ...prev,
-        isActive: pendingStatusChange,
-      }));
-    }
-    setShowStatusConfirm(false);
-    setPendingStatusChange(null);
   };
 
   const handleConfirmDelete = async () => {
@@ -326,16 +281,9 @@ export default function StaffTable() {
 
     try {
       const normalizedAvailableServices = mapCounterServices(staff.counterId?._id || null);
-      const availableServiceIds = new Set(
-        normalizedAvailableServices.map((service) => service.id || service._id),
-      );
       const initialSelected =
         staff.serviceRestrictionConfigured && staff.assignedServices
-          ? new Set(
-              staff.assignedServices
-                .map((service) => service.id || service._id)
-                .filter((id) => availableServiceIds.has(id)),
-            )
+          ? new Set(staff.assignedServices.map((service) => service.id || service._id))
           : new Set(normalizedAvailableServices.map((service) => service.id || service._id));
 
       setAvailableServices(normalizedAvailableServices);
@@ -380,26 +328,27 @@ export default function StaffTable() {
   };
 
   const allServices = useMemo(() => {
-    const map = new Map<string, CounterServiceOption>();
-    counters.forEach((counter) =>
-      counter.services?.forEach((service) => map.set(service._id, service)),
-    );
+    const map = new Map();
+    counters.forEach((counter) => {
+      counter.services?.forEach((service) => {
+        map.set(service._id, service);
+      });
+    });
 
     return Array.from(map.values()).sort(
-      (a, b) => (a.displayOrder || 0) - (b.displayOrder || 0),
+      (a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0),
     );
   }, [counters]);
 
-  const serviceColorMap = useMemo(
-    () =>
-      new Map(
-        allServices.map((service, index) => [
-          service._id,
-          getSequentialTagColorStyle(index),
-        ]),
-      ),
-    [allServices],
-  );
+  const serviceColorMap = useMemo(() => {
+    const colorMap = new Map<string, ReturnType<typeof getSequentialTagColorStyle>>();
+    allServices.forEach((service: any, index: number) => {
+      const color = getSequentialTagColorStyle(index);
+      if (service._id) colorMap.set(service._id, color);
+      if (service.id) colorMap.set(service.id, color);
+    });
+    return colorMap;
+  }, [allServices]);
 
   const filteredStaff = staffList.filter((staff) => {
     const matchesSearch =
@@ -484,7 +433,7 @@ export default function StaffTable() {
                 options: [
                   { label: "Tất cả quầy", value: "all" },
                   { label: "Không có quầy", value: "unassigned" },
-                  ...allServices.map((service) => ({
+                  ...allServices.map((service: any) => ({
                     label: `${service.name} (${service.code})`,
                     value: service._id,
                   })),
@@ -519,7 +468,7 @@ export default function StaffTable() {
       {loading ? (
         <div className="admin-table-loading">Đang tải...</div>
       ) : (
-        <table className="admin-table staff-table">
+        <table className="admin-table">
           <thead>
             <tr>
               <th>Tên đăng nhập</th>
@@ -542,41 +491,37 @@ export default function StaffTable() {
                   {staff.counterId ? (
                     getCounterDisplay(staff)
                   ) : (
-                    <span className="admin-empty-info">Không có thông tin</span>
+                    <span style={{ color: "#999" }}>Chưa gán</span>
                   )}
                 </td>
                 <td>
-                  {staff.serviceRestrictionConfigured === false ? (
-                    <span style={{ color: "#666", fontStyle: "italic", fontSize: "0.9em" }}>
-                      Tất cả (mặc định)
-                    </span>
-                  ) : staff.effectiveServices && staff.effectiveServices.length > 0 ? (
+                  {staff.effectiveServices && staff.effectiveServices.length > 0 ? (
                     <div className="table-cell-counters">
-                      {staff.effectiveServices.map((service) => (
-                        <span
-                          key={service.id || service._id}
-                          className="table-cell-tag"
-                          style={{
-                            background:
-                              serviceColorMap.get(service.id || service._id)?.background ||
-                              "#bfdbfe",
-                            borderLeftColor:
-                              serviceColorMap.get(service.id || service._id)?.border ||
-                              "#2563eb",
-                            color:
-                              serviceColorMap.get(service.id || service._id)?.color ||
-                              "#1e3a8a",
-                          }}
-                        >
-                          {service.name}
-                        </span>
-                      ))}
+                      {staff.effectiveServices.map((service) => {
+                        const serviceId = service.id || service._id;
+                        const tagStyle = serviceColorMap.get(serviceId);
+
+                        return (
+                          <span
+                            key={serviceId}
+                            className="table-cell-tag"
+                            style={{
+                              background: tagStyle?.background || "#bfdbfe",
+                              borderLeftColor: tagStyle?.border || "#2563eb",
+                              color: tagStyle?.color || "#1e3a8a",
+                            }}
+                          >
+                            {service.name}
+                            {service.code ? ` (${service.code})` : ""}
+                          </span>
+                        );
+                      })}
                     </div>
                   ) : staff.serviceRestrictionConfigured ? (
-                    <span className="admin-empty-info">Không có thông tin</span>
+                    <span className="admin-empty-info">Không có quầy</span>
                   ) : (
-                    <span style={{ color: "#999", fontStyle: "italic", fontSize: "0.9em" }}>
-                      Chưa cấu hình
+                    <span style={{ color: "#666", fontStyle: "italic", fontSize: "0.9em" }}>
+                      Tất cả (mặc định)
                     </span>
                   )}
                 </td>
@@ -592,7 +537,7 @@ export default function StaffTable() {
                 <td>
                   {staff.lastLoginAt
                     ? new Date(staff.lastLoginAt).toLocaleString("vi-VN")
-                    : <span className="admin-empty-info">Không có thông tin</span>}
+                    : "Chưa đăng nhập"}
                 </td>
                 <td>
                   <div className="table-actions">
@@ -741,22 +686,18 @@ export default function StaffTable() {
                 )}
 
                 <div className="admin-form-group">
-                  <label className="admin-checkbox-card">
+                  <label>
                     <input
                       type="checkbox"
                       checked={formData.isActive}
-                      onChange={(e) => handleStatusChange(e.target.checked)}
-                    />
-                    <div>
-                      <div className="admin-checkbox-card-title">
-                        {formData.isActive
-                          ? "Kích hoạt tài khoản"
-                          : "Vô hiệu tài khoản"}
-                      </div>
-                      <div className="admin-checkbox-card-description">
-                        Bật checkbox để nhân viên đăng nhập và sử dụng tài khoản. Bỏ chọn để vô hiệu tài khoản này.
-                      </div>
-                    </div>
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          isActive: e.target.checked,
+                        })
+                      }
+                    />{" "}
+                    Kích hoạt tài khoản
                   </label>
                 </div>
               </div>
@@ -775,20 +716,9 @@ export default function StaffTable() {
       )}
 
       <AdminConfirmDialog
-        isOpen={showStatusConfirm}
-        title="Xác thực thay đổi trạng thái"
-        message={`Bạn có chắc chắn muốn chuyển trạng thái tài khoản thành ${pendingStatusChange ? "Kích hoạt tài khoản" : "Vô hiệu tài khoản"}?`}
-        onConfirm={handleConfirmStatus}
-        onCancel={() => {
-          setShowStatusConfirm(false);
-          setPendingStatusChange(null);
-        }}
-      />
-
-      <AdminConfirmDialog
         isOpen={showDeleteConfirm}
-        title="Xác nhận xóa người dùng"
-        message="Bạn có chắc chắn muốn xóa người dùng này? Hành động này không thể hoàn tác."
+        title="Xác nhận xóa nhân viên"
+        message="Bạn có chắc chắn muốn xóa nhân viên này? Hành động này không thể hoàn tác."
         onConfirm={handleConfirmDelete}
         onCancel={() => setShowDeleteConfirm(false)}
       />
@@ -828,7 +758,7 @@ export default function StaffTable() {
                 </p>
 
                 {availableServices.length === 0 ? (
-                  <p className="admin-empty-info">Không có thông tin</p>
+                  <p style={{ color: "#999", fontStyle: "italic" }}>Phòng không có quầy nào.</p>
                 ) : (
                   <div
                     style={{
