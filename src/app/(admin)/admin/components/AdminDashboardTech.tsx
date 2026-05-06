@@ -37,6 +37,7 @@ import {
   type DashboardTicketTrendPoint,
   type DashboardTicketsToday,
 } from "@/services/dashboard.service";
+import { getCounters, type Counter } from "@/services/admin.service";
 
 ChartJS.register(
   ArcElement,
@@ -221,6 +222,7 @@ export default function AdminDashboardTech() {
   const [counterAlerts, setCounterAlerts] = useState<
     DashboardCounterAlert[] | null
   >(null);
+  const [allCounters, setAllCounters] = useState<Counter[]>([]);
   const [dayValue, setDayValue] = useState(previousDay);
   const [monthValue, setMonthValue] = useState(currentMonth);
   const [loading, setLoading] = useState(true);
@@ -249,6 +251,7 @@ export default function AdminDashboardTech() {
           trendDayData,
           trendMonthData,
           alertData,
+          countersListData,
         ] = await Promise.all([
           getDashboardTicketOverview(),
           getDashboardCountersStatus(),
@@ -259,6 +262,7 @@ export default function AdminDashboardTech() {
           getDashboardTicketTrend("day"),
           getDashboardTicketTrend("month"),
           getDashboardCounterAlert(),
+          getCounters(),
         ]);
 
         if (!mounted) return;
@@ -272,6 +276,7 @@ export default function AdminDashboardTech() {
         setTrendDay(trendDayData);
         setTrendMonth(trendMonthData);
         setCounterAlerts(alertData);
+        setAllCounters(countersListData);
       } catch (fetchError) {
         if (!mounted) return;
 
@@ -302,16 +307,26 @@ export default function AdminDashboardTech() {
   const todayValue = useMemo(currentDay, []);
   const counterNameMap = useMemo(() => {
     const map = new Map<string, string>();
-    countersStatus?.countersList.forEach((counter) => {
-      if (counter.id) map.set(counter.id, counter.name || counter.id);
+    // Map from full counters list (getCounters API) — has _id which matches raw IDs
+    allCounters.forEach((counter) => {
+      if (counter._id) map.set(counter._id, counter.name || counter._id);
       if (counter.code) map.set(counter.code, counter.name || counter.code);
       if (counter.number !== undefined) {
         map.set(String(counter.number), counter.name || `Phòng ${counter.number}`);
       }
       if (counter.name) map.set(counter.name, counter.name);
     });
+    // Also map from dashboard countersList as fallback
+    countersStatus?.countersList.forEach((counter) => {
+      if (counter.id && !map.has(counter.id)) map.set(counter.id, counter.name || counter.id);
+      if (counter.code && !map.has(counter.code)) map.set(counter.code, counter.name || counter.code);
+      if (counter.number !== undefined && !map.has(String(counter.number))) {
+        map.set(String(counter.number), counter.name || `Phòng ${counter.number}`);
+      }
+      if (counter.name && !map.has(counter.name)) map.set(counter.name, counter.name);
+    });
     return map;
-  }, [countersStatus]);
+  }, [countersStatus, allCounters]);
 
   const serviceNameMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -387,7 +402,7 @@ export default function AdminDashboardTech() {
         status: ticket.status,
         createdAt: ticket.createdAt,
         serviceName: ticket.serviceId?.name || "Chưa rõ",
-        serviceIdKey: ticket.serviceId?.id || ticket.serviceId?.code,
+          serviceIdKey: ticket.serviceId?.code || ticket.serviceId?.name,
         counterName,
         counterIdKey,
       }));
@@ -447,12 +462,14 @@ export default function AdminDashboardTech() {
 
     const recentCounters = recentTicketsData?.recentByCounter ?? [];
     if (recentCounters.length > 0) {
+      const seen = new Set<string>();
       return recentCounters
         .map((group) => {
           const counterId = group.counterId;
           if (!counterId) return null;
           const name = getCounterName(counterId);
-          if (!name) return null;
+          if (!name || seen.has(name)) return null;
+          seen.add(name);
           return {
             id: name,
             name,
@@ -461,11 +478,19 @@ export default function AdminDashboardTech() {
         .filter((item): item is { id: string; name: string } => item !== null);
     }
 
+    // Fallback: use full counters list for options
+    if (allCounters.length > 0) {
+      return allCounters.map((counter) => ({
+        id: counter.name || `Phòng ${counter.number}`,
+        name: counter.name || `Phòng ${counter.number}`,
+      }));
+    }
+
     return (countersStatus?.countersList ?? []).map((counter) => ({
       id: counter.name || (counter.number !== undefined ? `Phòng ${counter.number}` : "Chưa gán"),
       name: counter.name || (counter.number !== undefined ? `Phòng ${counter.number}` : "Chưa gán"),
     }));
-  }, [countersStatus, recentMode, recentTicketsData, getCounterName]);
+  }, [countersStatus, recentMode, recentTicketsData, getCounterName, allCounters]);
 
   const filteredTickets = useMemo(() => {
     if (!recentTicketsData) return [];
@@ -792,13 +817,8 @@ export default function AdminDashboardTech() {
           <SummaryCard icon={<FiCheckCircle />} title="Tổng nhân viên">
             <div className={styles.summaryList}>
               {staffGroups.map((group) => (
-                <div key={group.label} className={styles.roomGroup}>
-                  <div className={styles.roomTitle}>{group.label}</div>
-                  <ul className={styles.roomList}>
-                    {group.staff.map((staff) => (
-                      <li key={staff}>{staff}</li>
-                    ))}
-                  </ul>
+                <div key={group.label} className={styles.summaryItem}>
+                  {group.label} — Số lượng nhân viên: {group.staff.length}
                 </div>
               ))}
             </div>
