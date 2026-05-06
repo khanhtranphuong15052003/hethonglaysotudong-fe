@@ -834,7 +834,7 @@ export default function AdminDashboardTech() {
           </SummaryCard>
         </section>
 
-        <section className={styles.gridTwo}>
+        <section className={styles.gridThree}>
           <div className={`${styles.panel} ${styles.statusPanel}`}>
             <div className={styles.panelHead}>
               <div>
@@ -896,10 +896,45 @@ export default function AdminDashboardTech() {
               ))}
             </div>
           </div>
+
+          <div className={styles.panel}>
+            <div className={styles.panelHead}>
+              <div>
+                <h2 className={styles.panelTitle}>Tỷ lệ vé theo phòng</h2>
+                <div className={styles.muted}>Biểu đồ tròn phản ánh lưu lượng theo từng quầy.</div>
+              </div>
+            </div>
+            <div className={styles.filterRow}>
+              <div className={styles.inputGroup}>
+                <label className={styles.label} htmlFor="pie-room">Lọc phòng</label>
+                <select
+                  id="pie-room"
+                  className={styles.input}
+                  value={pieCounter}
+                  onChange={(event) => setPieCounter(event.target.value)}
+                >
+                  <option value="Tất cả">Tất cả</option>
+                  {pieCounterOptions.map((name) => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className={styles.chartWrapCompact}>
+              {pieData ? (
+                <Doughnut
+                  data={pieData}
+                  plugins={[doughnutLabelPlugin]}
+                  options={chartOptionsBase}
+                />
+              ) : (
+                <div className={styles.empty}>Chưa có dữ liệu thống kê.</div>
+              )}
+            </div>
+          </div>
         </section>
 
-        <section className={styles.gridTwo}>
-          <div className={styles.panel}>
+        <section className={styles.panel}>
             <div className={styles.panelHead}>
               <div>
                 <h2 className={styles.panelTitle}>Danh sách 5 vé gần nhất</h2>
@@ -970,43 +1005,6 @@ export default function AdminDashboardTech() {
                 ))
               )}
             </div>
-          </div>
-
-          <div className={styles.panel}>
-            <div className={styles.panelHead}>
-              <div>
-                <h2 className={styles.panelTitle}>Tỷ lệ vé theo phòng</h2>
-                <div className={styles.muted}>Biểu đồ tròn phản ánh lưu lượng theo từng quầy.</div>
-              </div>
-            </div>
-            <div className={styles.filterRow}>
-              <div className={styles.inputGroup}>
-                <label className={styles.label} htmlFor="pie-room">Lọc phòng</label>
-                <select
-                  id="pie-room"
-                  className={styles.input}
-                  value={pieCounter}
-                  onChange={(event) => setPieCounter(event.target.value)}
-                >
-                  <option value="Tất cả">Tất cả</option>
-                  {pieCounterOptions.map((name) => (
-                    <option key={name} value={name}>{name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className={styles.chartWrapCompact}>
-              {pieData ? (
-                <Doughnut
-                  data={pieData}
-                  plugins={[doughnutLabelPlugin]}
-                  options={chartOptionsBase}
-                />
-              ) : (
-                <div className={styles.empty}>Chưa có dữ liệu thống kê.</div>
-              )}
-            </div>
-          </div>
         </section>
 
         <section className={styles.panel}>
