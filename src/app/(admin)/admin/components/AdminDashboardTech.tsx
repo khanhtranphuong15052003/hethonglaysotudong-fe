@@ -835,7 +835,7 @@ export default function AdminDashboardTech() {
         </section>
 
         <section className={styles.gridTwo}>
-          <div className={styles.panel}>
+          <div className={`${styles.panel} ${styles.statusPanel}`}>
             <div className={styles.panelHead}>
               <div>
                 <h2 className={styles.panelTitle}>Tổng quan trạng thái vé</h2>
@@ -864,17 +864,9 @@ export default function AdminDashboardTech() {
                 </div>
               ))}
             </div>
-            <div className={styles.legendList}>
-              {ticketOverview.serviceCounts.map((service) => (
-                <div key={service.serviceId} className={styles.legendItem}>
-                  <div className={styles.legendLabel}>{service.serviceName}</div>
-                  <div className={styles.legendValue}>{formatUnit(service.count, "vé")}</div>
-                </div>
-              ))}
-            </div>
           </div>
 
-          <div className={styles.panel}>
+          <div className={`${styles.panel} ${styles.statusPanel}`}>
             <div className={styles.panelHead}>
               <div>
                 <h2 className={styles.panelTitle}>Trạng thái vé hôm nay</h2>
@@ -966,11 +958,9 @@ export default function AdminDashboardTech() {
               ) : (
                 filteredTickets.map((ticket) => (
                   <div key={ticket.id} className={styles.ticketItem}>
-                    <div>
-                      <div className={styles.ticketCode}>{ticket.ticketNumber}</div>
-                      <div className={styles.ticketMeta}>
-                        {ticket.serviceName} 
-                      </div>
+                    <div className={styles.ticketLeft}>
+                      <span className={styles.ticketCode}>{ticket.ticketNumber}</span>
+                      <span className={styles.ticketMeta}>{ticket.serviceName}</span>
                     </div>
                     <div className={styles.ticketRight}>
                       <span className={styles.ticketStatus}>{getTicketStatusLabel(ticket.status)}</span>
